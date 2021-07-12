@@ -8,9 +8,9 @@ Lattice::Lattice(unsigned int w, unsigned int h) : Renderizable(h, w) {
 Lattice::~Lattice() { }
 void Lattice::render(SDL_Texture* screen)
 {
-    /* From SO: void **pixels is a pointer-to-a-pointer; these are typically
-     * used (in this kind of context) where the data is of a pointer type but
-     * memory management is handled by the function you call. */
+    /* From Stack Overflow: void **pixels is a pointer-to-a-pointer; these are
+     * typically used (in this kind of context) where the data is of a pointer
+     * type but memory management is handled by the function you call. */
     void *pixels;
     int pitch;
     Uint32 *dest;

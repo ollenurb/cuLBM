@@ -104,39 +104,10 @@ void speed_to_rgb(float speed, SDL_Color& color)
 {
 }
 
-
 float modulus2D(float v[2])
 {
     return sqrt((v[0] * v[0]) + (v[1] * v[1]));
 }
-
-// TODO: Rename function
-void simulation_step(SDL_Texture *screen)
-{
-    /* From SO: void **pixels is a pointer-to-a-pointer; these are typically
-     * used (in this kind of context) where the data is of a pointer type but
-     * memory management is handled by the function you call. */
-    void *pixels;
-    int pitch;
-    Uint32 *dest;
-
-    float speed;
-
-    if (SDL_LockTexture(screen, NULL, &pixels, &pitch) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
-    }
-
-    for(int y = 0; y < HEIGHT; y++) {
-        dest = (Uint32*)((Uint8*) pixels + y * pitch);
-        for(int x = 0; x < WIDTH; x++) {
-            /* speed = modulus2D(avg[x][y]); */
-            *(dest + x) = ((0xFF000000|(121<<16)|(255<<8)|20));
-        }
-    }
-
-    SDL_UnlockTexture(screen);
-}
-
 
 int main(int argc, char** argv)
 {
@@ -155,7 +126,7 @@ int main(int argc, char** argv)
     /* } */
 
     /* === SDL-Related variables === */
-
     Lattice lattice(WIDTH, HEIGHT);
     Engine engine(lattice);
+    engine.run();
 }
