@@ -24,4 +24,30 @@ class Tensor3D
         }
         return data[index];
     }
+
+    // TODO: Insert control on sizes
+    void swap(Tensor3D& swappable)
+    {
+        T *tmp = swappable.data;
+        swappable.data = data;
+        data = tmp;
+    }
+
+    void print()
+    {
+        /* for(int y = 0; y < Y; y++) { */
+        /*     for(int x = 0; x < X; x++) { */
+        /*         printf("{ "); */
+        /*         for(int z = 0; z < Z; z++) { */
+        /*             printf("%.8f ", data[y * Y * Z + x * Z + z]); */
+        /*         } */
+        /*         printf("} "); */
+        /*     } */
+        /*     printf("\n"); */
+        /* } */
+        for (int i = 0; i < X*Y*Z; i++) {
+            printf("%.8f ", data[i]);
+        }
+    }
+
 };
