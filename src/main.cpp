@@ -5,7 +5,7 @@
 #define D 2
 #define Q 9
 #define WIDTH 600
-#define HEIGHT 500
+#define HEIGHT 240
 
 int main(int argc, char** argv)
 {

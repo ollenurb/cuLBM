@@ -10,18 +10,23 @@ Engine::~Engine() { }
 
 void Engine::run()
 {
+    unsigned n_frame = 0;
     running = true;
     while(running) {
         process_events();
-        // TODO: Implement step only after N_FRAMES
-        renderizable.render(screen);
+        renderizable.step();
 
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, screen, NULL, NULL);
-        SDL_RenderPresent(renderer);
+        /* TODO: Change 10 with AFTER_NFRAMES */
+        if(n_frame == 10) {
+            renderizable.render(screen);
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, screen, NULL, NULL);
+            SDL_RenderPresent(renderer);
+            n_frame = 0;
+            SDL_Delay(60);
+        }
 
-        // TODO: Improve FPS handling
-        SDL_Delay(60);
+        n_frame++;
     }
 }
 

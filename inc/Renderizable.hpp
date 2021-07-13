@@ -17,6 +17,7 @@ class Renderizable {
      * int numbers. In this way, the Engine will be the only one responsible
      * for calling the SDL API */
     virtual void render(SDL_Texture*) = 0;
+    virtual void step() = 0;
     unsigned int get_width() { return WIDTH; }
     unsigned int get_height() { return HEIGHT; }
 

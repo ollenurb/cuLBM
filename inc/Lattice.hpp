@@ -16,7 +16,6 @@ class Lattice : public Renderizable
     /* +=========+ Constants +=========+ */
     const double VELOCITY = 0.070;
     const double VISCOSITY = 0.020;
-    /* const double OMEGA = (1/3)*((1/VISCOSITY)+6); */
     const double OMEGA = 1 / (3 * VISCOSITY + 0.5);
 
 
@@ -47,6 +46,6 @@ class Lattice : public Renderizable
     Lattice(unsigned int, unsigned int);
     ~Lattice();
     void render(SDL_Texture*) override;
-    /* Run a simulation step: f(t) -> f(t + dt) */
-    void step();
+    /* Perform a simulation step: f(t) -> f(t + dt) */
+    void step() override;
 };
