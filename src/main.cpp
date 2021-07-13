@@ -4,7 +4,7 @@
 
 #define D 2
 #define Q 9
-#define WIDTH 100
+#define WIDTH 300
 #define HEIGHT 100
 
 #define D_T 1

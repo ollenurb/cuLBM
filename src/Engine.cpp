@@ -19,6 +19,9 @@ void Engine::run()
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, screen, NULL, NULL);
         SDL_RenderPresent(renderer);
+
+        // TODO: Improve FPS handling
+        SDL_Delay(60);
     }
 }
 
