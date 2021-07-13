@@ -15,7 +15,7 @@ class Lattice : public Renderizable
     private:
     /* +=========+ Constants +=========+ */
     const double VELOCITY = 0.070;
-    const double VISCOSITY = 0.020;
+    const double VISCOSITY = 0.166;
     const double OMEGA = 1 / (3 * VISCOSITY + 0.5);
 
 

@@ -1,7 +1,7 @@
 # tool macros
 CC := nvcc
 CCFLAGS := -std=c++17
-CCOBJFLAGS := $(CCFLAGS) -x cu -c
+CCOBJFLAGS := $(CCFLAGS) -x cu -c -O3
 LIBS := -l SDL2
 
 # other variables

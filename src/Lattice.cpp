@@ -41,6 +41,7 @@ void Lattice::render(SDL_Texture* screen)
     void *pixels;
     int pitch;
     Uint32 *dest;
+    float b;
 
     if (SDL_LockTexture(screen, NULL, &pixels, &pitch) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
@@ -49,7 +50,7 @@ void Lattice::render(SDL_Texture* screen)
     for(int y = 0; y < HEIGHT; y++) {
         dest = (Uint32*)((Uint8*) pixels + y * pitch);
         for(int x = 0; x < WIDTH; x++) {
-            float b = std::min(modulus2D(flow_velocity(x, y, 0), flow_velocity(x, y, 1)) * 3.0, 1.0);
+            b = std::min(modulus2D(flow_velocity(x, y, 0), flow_velocity(x, y, 1)) * 3.0, 1.0);
             *(dest + x) = HSBtoRGB(0.5, 1.0, b);
         }
     }
@@ -69,10 +70,17 @@ void Lattice::stream()
 
 void Lattice::collide()
 {
+    double total_density;
+    double e_dp_u;
+    double density_eq;
+    double mod_u;
+
     for(int x = 0; x < WIDTH; x++) {
         for(int y = 0; y < HEIGHT; y++) {
             /* Compute the total density of lattice site at position (x, y) */
-            double total_density = 0.0;
+            total_density = 0.0;
+            flow_velocity(x, y, 0) = flow_velocity(x, y, 1) = 0.0;
+
             for(int i = 0; i < Q; i++) {
                 total_density += density(x, y, i);
                 /* Accumulate the density inside each component of flow_velocity */
@@ -88,13 +96,13 @@ void Lattice::collide()
             /* Equation (8) */
             for(int i = 0; i < Q; i++) {
                 /* Compute dot product */
-                double e_dp_u = 0.0;
+                e_dp_u = 0.0;
                 for(int j = 0; j < D; j++) {
                     e_dp_u += flow_velocity(x, y, j) * e[i][j];
                 }
                 /* Compute modulus */
-                double mod_u = sqr(flow_velocity(x, y, 0)) + sqr(flow_velocity(x, y, 1));
-                double density_eq = total_density * W[i] * (1 + (3*e_dp_u) + (4.5*sqr(e_dp_u)) - (1.5*mod_u));
+                mod_u = sqr(flow_velocity(x, y, 0)) + sqr(flow_velocity(x, y, 1));
+                density_eq = total_density * W[i] * (1 + (3*e_dp_u) + (4.5*sqr(e_dp_u)) - (1.5*mod_u));
                 /* Equation (9) */
                 density(x, y, i) += OMEGA * (density_eq - density(x, y, i));
             }
