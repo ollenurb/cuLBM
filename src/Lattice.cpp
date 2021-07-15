@@ -25,7 +25,7 @@ Lattice::Lattice(unsigned int w, unsigned int h):
     }
 }
 
-Lattice::~Lattice() { }
+Lattice::~Lattice() = default;
 
 void Lattice::render(SDL_Texture* screen)
 {
@@ -38,7 +38,7 @@ void Lattice::render(SDL_Texture* screen)
     Uint32 *dest;
     float b;
 
-    if (SDL_LockTexture(screen, NULL, &pixels, &pitch) < 0) {
+    if (SDL_LockTexture(screen, nullptr, &pixels, &pitch) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
     }
 
@@ -54,7 +54,7 @@ void Lattice::render(SDL_Texture* screen)
 
 void Lattice::stream()
 {
-    /* Move the fluid to neighboring sites */
+    /* Move the fluid to neighbouring sites */
     for(int x = 1; x < WIDTH - 1; x++) {
         for(int y = 1; y < HEIGHT - 1; y++) {
             for(int i = 0; i < Q; i++) {
@@ -67,21 +67,40 @@ void Lattice::stream()
     /* (On-Grid bounce back) */
     /* TODO: Has to be fixed */
     for(int y = 0; y < HEIGHT; y++) {
-        density_t(1, y, 1) += density_t(0, y, 3);
-        density_t(1, y, 8) += density_t(0, y, 6);
-        density_t(1, y, 5) += density_t(0, y, 7);
+        density_t(0, y, 1) += density_t(0, y, 3);
+        density_t(0, y, 8) += density_t(0, y, 6);
+        density_t(0, y, 5) += density_t(0, y, 7);
 
-        density_t(WIDTH-2, y, 3) += density_t(WIDTH-1, y, 1);
-        density_t(WIDTH-2, y, 6) += density_t(WIDTH-1, y, 8);
-        density_t(WIDTH-2, y, 7) += density_t(WIDTH-1, y, 5);
+        density_t(0, y, 3) = 0;
+        density_t(0, y, 6) = 0;
+        density_t(0, y, 7) = 0;
 
-        density_t(WIDTH-1, y, 1) = W[1];
-        density_t(WIDTH-1, y, 5) = W[5];
-        density_t(WIDTH-1, y, 8) = W[8];
+        density_t(WIDTH-1, y, 3) += density_t(WIDTH-1, y, 1);
+        density_t(WIDTH-1, y, 6) += density_t(WIDTH-1, y, 8);
+        density_t(WIDTH-1, y, 7) += density_t(WIDTH-1, y, 5);
 
-        density_t(0, y, 3) = W[3];
-        density_t(0, y, 6) = W[6];
-        density_t(0, y, 7) = W[7];
+        density_t(WIDTH-1, y, 1) = 0;
+        density_t(WIDTH-1, y, 5) = 0;
+        density_t(WIDTH-1, y, 8) = 0;
+    }
+
+    for(int x = 0; x < WIDTH; x++) {
+        density_t(x, 0, 4) += density_t(x, 0, 2);
+        density_t(x, 0, 7) += density_t(x, 0, 6);
+        density_t(x, 0, 8) += density_t(x, 0, 5);
+
+        density_t(x, 0, 2) = 0;
+        density_t(x, 0, 6) = 0;
+        density_t(x, 0, 5) = 0;
+
+        density_t(x, HEIGHT-1, 2) += density_t(x, HEIGHT-1, 4);
+        density_t(x, HEIGHT-1, 6) += density_t(x, HEIGHT-1, 7);
+        density_t(x, HEIGHT-1, 5) += density_t(x, HEIGHT-1, 8);
+
+        density_t(x, HEIGHT-1, 4) = 0;
+        density_t(x, HEIGHT-1, 7) = 0;
+        density_t(x, HEIGHT-1, 8) = 0;
+
     }
 }
 
