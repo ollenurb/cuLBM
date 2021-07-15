@@ -1,11 +1,11 @@
-#include <SDL2/SDL.h>
-#include <Engine.hpp>
-#include <Lattice.hpp>
+#include "SDL.h"
+#include "Engine.hpp"
+#include "Lattice.hpp"
 
 #define D 2
 #define Q 9
-#define WIDTH 1000
-#define HEIGHT 600
+#define WIDTH 600
+#define HEIGHT 300
 
 int main(int argc, char** argv)
 {

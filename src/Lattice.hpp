@@ -1,8 +1,8 @@
 #pragma once
 
-#include <SDL2/SDL.h>
-#include <Renderizable.hpp>
-#include <Tensor3D.hpp>
+#include "SDL.h"
+#include "Renderizable.hpp"
+#include "Tensor3D.hpp"
 
 /* Number of velocity vectors */
 /* This class represents the 2DQ9 model */
@@ -15,7 +15,7 @@ class Lattice : public Renderizable
     private:
     /* +=========+ Constants +=========+ */
     const double VELOCITY = 0.070;
-    const double VISCOSITY = 0.166;
+    const double VISCOSITY = 0.020;
     const double OMEGA = 1 / (3 * VISCOSITY + 0.5);
 
 

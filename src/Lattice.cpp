@@ -1,4 +1,4 @@
-#include <Lattice.hpp>
+#include "Lattice.hpp"
 #include <cstdio>
 #include <cmath>
 
@@ -19,12 +19,7 @@ Lattice::Lattice(unsigned int w, unsigned int h):
             flow_velocity(x, y, 1) = 0;
             /* Initialize density function */
             for(int i = 0; i < Q; i++) {
-                double e_dp_u = 0.0;
-                for(int j = 0; j < D; j++) {
-                    e_dp_u += flow_velocity(x, y, j) * e[i][j];
-                }
-                double mod_u = sqr(flow_velocity(x, y, 0)) + sqr(flow_velocity(x, y, 1));
-                density(x, y, i) = W[i]*(1+(3*e_dp_u)+(4.5*sqr(e_dp_u))-(1.5*mod_u));
+                density(x, y, i) = W[i];
             }
         }
     }
@@ -59,12 +54,34 @@ void Lattice::render(SDL_Texture* screen)
 
 void Lattice::stream()
 {
+    /* Move the fluid to neighboring sites */
     for(int x = 1; x < WIDTH - 1; x++) {
         for(int y = 1; y < HEIGHT - 1; y++) {
             for(int i = 0; i < Q; i++) {
-                density_t(x + e[i][0],y + e[i][1], i) = density(x, y, i);
+                density_t(x + e[i][0], y + e[i][1], i) = density(x, y, i);
             }
         }
+    }
+
+    /* Check Horizontal Boundary conditions */
+    /* (On-Grid bounce back) */
+    /* TODO: Has to be fixed */
+    for(int y = 0; y < HEIGHT; y++) {
+        density_t(1, y, 1) += density_t(0, y, 3);
+        density_t(1, y, 8) += density_t(0, y, 6);
+        density_t(1, y, 5) += density_t(0, y, 7);
+
+        density_t(WIDTH-2, y, 3) += density_t(WIDTH-1, y, 1);
+        density_t(WIDTH-2, y, 6) += density_t(WIDTH-1, y, 8);
+        density_t(WIDTH-2, y, 7) += density_t(WIDTH-1, y, 5);
+
+        density_t(WIDTH-1, y, 1) = W[1];
+        density_t(WIDTH-1, y, 5) = W[5];
+        density_t(WIDTH-1, y, 8) = W[8];
+
+        density_t(0, y, 3) = W[3];
+        density_t(0, y, 6) = W[6];
+        density_t(0, y, 7) = W[7];
     }
 }
 

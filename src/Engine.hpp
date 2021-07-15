@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Renderizable.hpp>
-#include <SDL2/SDL.h>
+#include "Renderizable.hpp"
+#include "SDL.h"
 
 class Engine {
     private:
