@@ -12,9 +12,9 @@ set(SOURCES
     src/Engine.cpp
     src/Lattice.cpp
     src/Renderizable.hpp
-    src/Tensor3D.hpp
     src/Engine.hpp
     src/Lattice.hpp
+    src/Matrix.hpp
 )
 
 
@@ -34,7 +34,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
-set(CMAKE_CXX_FLAGS "-Wall -O3")
+#set(CMAKE_CXX_FLAGS "-Wall -O3")
 
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})

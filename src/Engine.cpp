@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Engine.hpp"
 
 Engine::Engine(Renderizable &r) : renderizable(r), WIDTH(r.get_width()), HEIGHT(r.get_height()) {
@@ -6,16 +7,15 @@ Engine::Engine(Renderizable &r) : renderizable(r), WIDTH(r.get_width()), HEIGHT(
     screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
 }
 
-Engine::~Engine() { }
+Engine::~Engine() = default;
 
 void Engine::run()
 {
     unsigned n_frame = 0;
+    unsigned long long iterations = 0;
     running = true;
     while(running) {
         process_events();
-        renderizable.step();
-
         /* TODO: Change 10 with AFTER_NFRAMES */
         if(n_frame == 1) {
             renderizable.render(screen);
@@ -24,10 +24,12 @@ void Engine::run()
             SDL_RenderPresent(renderer);
             n_frame = 0;
             SDL_Delay(60);
+            iterations++;
         }
-
+        renderizable.step();
         n_frame++;
     }
+    std::cout << "Simulations took " << iterations <<  " iterations" << std::endl;
 }
 
 void Engine::process_events()

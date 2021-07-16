@@ -1,22 +1,19 @@
-#include "SDL.h"
 #include "Engine.hpp"
 #include "Lattice.hpp"
 
 #define D 2
 #define Q 9
 #define WIDTH 600
-#define HEIGHT 300
+#define HEIGHT 240
 
 int main(int argc, char** argv)
 {
     /* === SDL-Related variables === */
     Lattice lattice(WIDTH, HEIGHT);
-//    printf("\nStep 1's velocity:\n");
-//    lattice.step();
-//    printf("\nStep 2's velocity:\n");
-//    lattice.step();
-//    printf("\nStep 2's velocity:\n");
-//    lattice.step();
+//    for(int i = 0; i < 3; i++) {
+//        std::cout << "Step " << i;
+//        lattice.step();
+//    }
     /* printf("\nStep 2's velocity:\n"); */
     /* lattice.step(); */
 
