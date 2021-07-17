@@ -17,7 +17,7 @@ void Engine::run()
     while(running) {
         process_events();
         /* TODO: Change 10 with AFTER_NFRAMES */
-        if(n_frame == 1) {
+        if(n_frame == 8) {
             renderizable.render(screen);
             SDL_RenderClear(renderer);
             SDL_RenderCopy(renderer, screen, NULL, NULL);

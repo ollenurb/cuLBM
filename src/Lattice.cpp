@@ -1,9 +1,7 @@
 #include "Lattice.hpp"
-#include <cstdio>
 #include <cmath>
+#include <algorithm>
 
-inline double modulus2D(double x, double y);
-inline double sqr(double a);
 unsigned int HSBtoRGB(float hue, float saturation, float brightness);
 
 Lattice::Lattice(unsigned int w, unsigned int h):
@@ -12,22 +10,31 @@ Lattice::Lattice(unsigned int w, unsigned int h):
     lattice_t(w, h)
 {
     double e_dp_u;
+    /* Initialize the initial configuration */
+    initial_config.macroscopic_velocity.x = VELOCITY;
+    initial_config.macroscopic_velocity.y = 0;
+    for(int i = 0; i < Q; i++) {
+        e_dp_u = e[i] * initial_config.macroscopic_velocity;
+        initial_config.density[i] = initial_config.density_eq[i] = W[i] * (1 + (3*e_dp_u) + (4.5*(e_dp_u * e_dp_u)) - (1.5 * initial_config.macroscopic_velocity.mod_sqr()));
+    }
+
     for(int x = 0; x < WIDTH; x++) {
         for(int y = 0; y < HEIGHT; y++) {
             /* Initialize flow velocity */
-            lattice(x, y).macroscopic_velocity.x = VELOCITY;
-            lattice(x, y).macroscopic_velocity.y = 0;
+            lattice(x, y) = initial_config;
             /* Initialize density function */
-            for(int i = 0; i < Q; i++) {
-                e_dp_u = e[i] * lattice(x, y).macroscopic_velocity;
-                lattice(x, y).density_eq[i] = W[i] * (1 + (3*e_dp_u) + (4.5*(e_dp_u * e_dp_u)) - (1.5 * lattice(x, y).macroscopic_velocity.mod_sqr()));
-                lattice(x, y).density[i] = lattice_t(x, y).density[i] = lattice_t(x, y).density_eq[i] = lattice(x, y).density_eq[i];
-            }
+//            for(int i = 0; i < Q; i++) {
+//                lattice(x, y)
+//            }
         }
     }
 
-    for(int x = 100; x < 200; x++) {
-        for (int y = 100; y < 200; y++) {
+    int size = 10;
+    int x_center = WIDTH / 2 - (size / 2);
+    int y_center = HEIGHT / 2 - (size / 2);
+
+    for(int x = x_center; x < x_center + size; x++) {
+        for (int y = y_center; y < y_center + size; y++) {
             for(int i = 0; i < Q; i++) {
                 lattice(x, y).density[i] += .020;
             }
@@ -63,57 +70,80 @@ void Lattice::render(SDL_Texture* screen)
     SDL_UnlockTexture(screen);
 }
 
+inline unsigned clamp(unsigned val, unsigned low, unsigned high)
+{
+    return std::min(std::max(val, low), high);
+}
+
 void Lattice::stream()
 {
+    /* Check Horizontal Boundary conditions */
+    LatticeNode &left = lattice_t(0, 0);
+    LatticeNode &right = lattice_t(0, 0);
+
+    for(int y = 0; y < HEIGHT; y++) {
+        left = lattice_t(0, y);
+        right = lattice_t(WIDTH-1, y);
+
+        /* Left Wall */
+        left.density[Ei] = left.density[Wi];
+        left.density[SEi] = left.density[NWi];
+        left.density[NEi] = left.density[SWi];
+
+        left.density[Wi] = W[Wi] * (1 - 3*(VELOCITY) + 3*(VELOCITY * VELOCITY));
+        left.density[NWi] = W[NWi] * (1 - 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+        left.density[SWi] = W[SWi] * (1 - 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+
+        /* Right Wall */
+        right.density[Wi] =  right.density[Ei];
+        right.density[NWi] = right.density[SEi];
+        right.density[SWi] = right.density[NEi];
+
+        right.density[Ei] = W[Ei] * (1 + 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+        right.density[SEi] = W[SEi] * (1 + 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+        right.density[NEi] = W[NEi] * (1 + 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+    }
+
+    /* Check Vertical Boundary conditions */
+    LatticeNode &top = lattice_t(0, 0);
+    LatticeNode &bottom = lattice_t(0, 0);
+
+    for(int x = 0; x < WIDTH; x++) {
+        top = lattice_t(x, 0);
+        bottom = lattice_t(x, HEIGHT-1);
+
+        /* Top Wall */
+        top.density[Si] = top.density[Ni];
+        top.density[SWi] = top.density[NEi];
+        top.density[SEi] = top.density[NWi];
+
+        top.density[Ni] = W[Ni] * (1 - 1.5*(VELOCITY * VELOCITY));
+        top.density[NEi] = W[NEi] * (1 + 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+        top.density[NWi] = W[NWi] * (1 - 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+
+        /* Bottom Wall */
+        bottom.density[Ni] = bottom.density[Si];
+        bottom.density[NWi] = bottom.density[SEi];
+        bottom.density[NEi] = bottom.density[SWi];
+
+        bottom.density[Si] = W[Si] * (1 - 1.5*(VELOCITY * VELOCITY));
+        bottom.density[SEi] = W[SEi] * (1 + 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+        bottom.density[SWi] = W[SWi] * (1 - 3*VELOCITY + 3*(VELOCITY * VELOCITY));
+    }
     /* Move the fluid to neighbouring sites */
     /* This doesn't work */
-    for(int x = 1; x < WIDTH - 1; x++) {
-        for(int y = 1; y < HEIGHT - 1; y++) {
+    unsigned x_index, y_index;
+
+    for(int y = 0; y < HEIGHT; y++) {
+        for(int x = 0; x < WIDTH; x++) {
             for(int i = 0; i < Q; i++) {
-                lattice_t(x + e[i].x, y + e[i].y).density[i] = lattice(x, y).density[i];
+                x_index = clamp(x + e[i].x, 0, WIDTH-1);
+                y_index = clamp(y + e[i].y, 0, HEIGHT-1);
+                lattice_t(x_index, y_index).density[i] = lattice(x, y).density[i];
             }
         }
     }
 
-    /* Check Horizontal Boundary conditions */
-    /* (On-Grid bounce back) */
-    /* TODO: Has to be fixed */
-//    for(int y = 0; y < HEIGHT; y++) {
-//        density_t(0, y, 1) += density_t(0, y, 3);
-//        density_t(0, y, 8) += density_t(0, y, 6);
-//        density_t(0, y, 5) += density_t(0, y, 7);
-//
-//        density_t(0, y, 3) = 0;
-//        density_t(0, y, 6) = 0;
-//        density_t(0, y, 7) = 0;
-//
-//        density_t(WIDTH-1, y, 3) += density_t(WIDTH-1, y, 1);
-//        density_t(WIDTH-1, y, 6) += density_t(WIDTH-1, y, 8);
-//        density_t(WIDTH-1, y, 7) += density_t(WIDTH-1, y, 5);
-//
-//        density_t(WIDTH-1, y, 1) = 0;
-//        density_t(WIDTH-1, y, 5) = 0;
-//        density_t(WIDTH-1, y, 8) = 0;
-//    }
-//
-//    for(int x = 0; x < WIDTH; x++) {
-//        density_t(x, 0, 4) += density_t(x, 0, 2);
-//        density_t(x, 0, 7) += density_t(x, 0, 6);
-//        density_t(x, 0, 8) += density_t(x, 0, 5);
-//
-//        density_t(x, 0, 2) = 0;
-//        density_t(x, 0, 6) = 0;
-//        density_t(x, 0, 5) = 0;
-//
-//        density_t(x, HEIGHT-1, 2) += density_t(x, HEIGHT-1, 4);
-//        density_t(x, HEIGHT-1, 6) += density_t(x, HEIGHT-1, 7);
-//        density_t(x, HEIGHT-1, 5) += density_t(x, HEIGHT-1, 8);
-//
-//        density_t(x, HEIGHT-1, 4) = 0;
-//        density_t(x, HEIGHT-1, 7) = 0;
-//        density_t(x, HEIGHT-1, 8) = 0;
-//
-//    }
 }
 
 void Lattice::collide()
@@ -137,7 +167,6 @@ void Lattice::collide()
                 u.x += cur_node.density[i] * e[i].x; // U_{x} component
                 u.y += cur_node.density[i] * e[i].y; // U_{y} component
             }
-//            e_dp_u = u.x + u.y;
 
             /* Compute average to get the actual value of flow_velocity */
             /* "Cast" to 0 if the velocity is negative */
@@ -148,9 +177,7 @@ void Lattice::collide()
             /* Equation (8) */
             for(int i = 0; i < Q; i++) {
                 e_dp_u = e[i] * u;
-                /* Compute modulus */
                 cur_node.density_eq[i] = total_density * W[i] * (1 + (3*e_dp_u) + (4.5*(e_dp_u * e_dp_u)) - (1.5 * u.mod_sqr()));
-                /* Equation (9) */
                 cur_node.density[i] += OMEGA * (cur_node.density_eq[i] - cur_node.density[i]);
             }
             cur_node.total_density = total_density;
@@ -177,7 +204,7 @@ inline double Vector2D::modulus() const {
 }
 
 double Vector2D::operator*(Vector2D &v) const {
-    return x*v.x + y*v.y;
+    return (x * v.x) + (y * v.y);
 }
 
 /* +=========+ Functions no related to the class implementation +=========+ */

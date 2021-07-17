@@ -10,10 +10,10 @@ int main(int argc, char** argv)
 {
     /* === SDL-Related variables === */
     Lattice lattice(WIDTH, HEIGHT);
-//    for(int i = 0; i < 3; i++) {
-//        std::cout << "Step " << i;
+//    for(int i = 0; i < 100; i++) {
 //        lattice.step();
 //    }
+//    lattice.step();
     /* printf("\nStep 2's velocity:\n"); */
     /* lattice.step(); */
 

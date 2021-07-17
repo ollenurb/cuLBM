@@ -16,8 +16,8 @@
 #define Wi 3
 #define NWi 6
 #define NEi 5
-#define SEi 7
-#define SWi 8
+#define SEi 8
+#define SWi 7
 
 typedef struct Vector2D {
     double x;
@@ -27,7 +27,12 @@ typedef struct Vector2D {
     double operator *(Vector2D &v) const;
 } Vector2D;
 
-// Initialize values with weights
+/* A lattice Node
+ * density[i] = f_i
+ * density_eq[i] = f_eq_i
+ * macroscopic_velocity = u
+ * total_density = rho
+ */
 typedef struct LatticeNode {
     double density[Q] = WEIGHTS;
     double density_eq[Q] = WEIGHTS;
@@ -57,6 +62,7 @@ class Lattice : public Renderizable
     /* +=========+ Variables +=========+ */
     Matrix<LatticeNode> lattice;
     Matrix<LatticeNode> lattice_t;
+    LatticeNode initial_config;
 
     /* +=========+ LBM Steps +=========+ */
     void stream();
