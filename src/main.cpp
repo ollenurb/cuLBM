@@ -1,29 +1,40 @@
-#include "Engine.hpp"
-#include "Lattice.hpp"
+#include "common/Engine.hpp"
+#include "cpu/LBM.hpp"
+#include <chrono>
+#include <iostream>
 
-#define D 2
-#define Q 9
 #define WIDTH 600
 #define HEIGHT 240
 
+void run_benchmark(unsigned long steps)
+{
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+
+    std::cout << "Simulating " << steps << " time steps of a "
+              << WIDTH << "x" << HEIGHT << " lattice"
+              << std::endl;
+
+    LBM lattice(WIDTH, HEIGHT);
+    auto t0 = high_resolution_clock::now();
+    while(steps > 0) {
+        lattice.step();
+        steps--;
+    }
+    auto t1 = high_resolution_clock::now();
+
+    /* Getting number of milliseconds as an integer */
+    auto ms_int = duration_cast<milliseconds>(t1 - t0);
+
+    std::cout << "The program took " << ms_int.count() << "ms to complete" << std::endl;
+}
+
 int main(int argc, char** argv)
 {
-    /* === SDL-Related variables === */
-    Lattice lattice(WIDTH, HEIGHT);
-//    for(int i = 0; i < 100; i++) {
-//        lattice.step();
-//    }
-//    lattice.step();
-    /* printf("\nStep 2's velocity:\n"); */
-    /* lattice.step(); */
-
-    /* /1* printf("Step 2's velocity:\n"); *1/ */
-    /* /1* lattice.step(); *1/ */
-    /* /1* printf("Step 3's velocity:\n"); *1/ */
-    /* /1* lattice.step(); *1/ */
-    /* /1* printf("Step 4's velocity:\n"); *1/ */
-    /* /1* lattice.step(); *1/ */
+    LBM lattice(WIDTH, HEIGHT);
     Engine engine(lattice);
     engine.run();
-
+//    run_benchmark(100);
 }

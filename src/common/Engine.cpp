@@ -1,7 +1,7 @@
 #include <iostream>
 #include "Engine.hpp"
 
-Engine::Engine(Renderizable &r) : renderizable(r), WIDTH(r.get_width()), HEIGHT(r.get_height()) {
+Engine::Engine(Simulation &r) : renderizable(r), WIDTH(r.get_width()), HEIGHT(r.get_height()) {
     running = false;
     SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
     screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
@@ -17,7 +17,7 @@ void Engine::run()
     while(running) {
         process_events();
         /* TODO: Change 10 with AFTER_NFRAMES */
-        if(n_frame == 8) {
+        if(n_frame == 5) {
             renderizable.render(screen);
             SDL_RenderClear(renderer);
             SDL_RenderCopy(renderer, screen, NULL, NULL);

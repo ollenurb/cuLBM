@@ -3,21 +3,12 @@
 #include <vector>
 #include "SDL.h"
 #include "Matrix.hpp"
-#include "Renderizable.hpp"
+#include "../common/Simulation.hpp"
 
 /* Number of velocity vectors */
 /* This class represents the 2DQ9 model */
 #define Q 9
-#define D 2
 #define WEIGHTS {4.0/9, 1.0/9, 1.0/9, 1.0/9, 1.0/9, 1.0/36, 1.0/36, 1.0/36, 1.0/36}
-#define Ni 2
-#define Si 4
-#define Ei 1
-#define Wi 3
-#define NWi 6
-#define NEi 5
-#define SEi 8
-#define SWi 7
 
 typedef struct Vector2D {
     double x;
@@ -29,7 +20,7 @@ typedef struct Vector2D {
 
 /* A lattice Node
  * density[i] = f_i
- * density_eq[i] = f_eq_i
+ * density_eq[i] = f_eq_i (TODO: TO REMOVE)
  * macroscopic_velocity = u
  * total_density = rho
  */
@@ -40,7 +31,7 @@ typedef struct LatticeNode {
     Vector2D macroscopic_velocity = {0, 0};
 } LatticeNode;
 
-class Lattice : public Renderizable
+class LBM : public Simulation
 {
     private:
     /* +=========+ Constants +=========+ */
@@ -67,10 +58,13 @@ class Lattice : public Renderizable
     /* +=========+ LBM Steps +=========+ */
     void stream();
     void collide();
+    void bounce();
 
     public:
-    Lattice(unsigned int, unsigned int);
-    ~Lattice();
+    LBM(unsigned int, unsigned int);
+    ~LBM();
+
+    /* Render the lattice state on the screen */
     void render(SDL_Texture*) override;
     /* Perform a simulation step: f(t) -> f(t + dt) */
     void step() override;

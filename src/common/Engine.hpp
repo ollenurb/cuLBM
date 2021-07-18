@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Renderizable.hpp"
+#include "Simulation.hpp"
 #include "SDL.h"
 
 class Engine {
@@ -8,7 +8,7 @@ class Engine {
     const unsigned int WIDTH;
     const unsigned int HEIGHT;
     bool running;
-    Renderizable &renderizable;
+    Simulation &renderizable;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *screen;
@@ -16,7 +16,7 @@ class Engine {
     void process_events();
 
     public:
-    Engine(Renderizable&);
+    Engine(Simulation&);
     ~Engine();
     void run();
 };
