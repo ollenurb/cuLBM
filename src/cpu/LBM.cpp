@@ -2,8 +2,6 @@
 #include "../common/Utils.hpp"
 #include <algorithm>
 
-unsigned int HSBtoRGB(float hue, float saturation, float brightness);
-
 LBM::LBM(unsigned int w, unsigned int h): Simulation(w, h), lattice(w, h), lattice_t(w, h)
 {
     double e_dp_u;
@@ -107,7 +105,7 @@ void LBM::collide()
     double e_dp_u;
     double mod_u;
 
-    Vector2D u;
+    Vector2D<double> u{};
 
     for(int x = 0; x < WIDTH; x++) {
         for(int y = 0; y < HEIGHT; y++) {
@@ -151,18 +149,4 @@ void LBM::step()
     stream();
     bounce();
     lattice.swap(lattice_t);
-}
-
-/* +============+ Vector2D functions +============+ */
-/* They are const because they do not modify member's state */
-inline double Vector2D::mod_sqr() const {
-    return (x * x) + (y * y);
-}
-
-inline double Vector2D::modulus() const {
-    return sqrt(mod_sqr());
-}
-
-double Vector2D::operator*(Vector2D &v) const {
-    return (x * v.x) + (y * v.y);
 }

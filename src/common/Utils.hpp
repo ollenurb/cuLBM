@@ -4,6 +4,7 @@
 #pragma once
 
 namespace utils {
+
     /* Returns the pixel value as an unsigned integer
     * RGB components can be retrieved using simple bit shifting
     * R: val << 16

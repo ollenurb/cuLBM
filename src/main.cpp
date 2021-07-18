@@ -1,7 +1,12 @@
 #include "common/Engine.hpp"
-#include "cpu/LBM.hpp"
 #include <chrono>
 #include <iostream>
+/* If the GPU compilation flag is enabled, then include the GPU-Specific version */
+#ifdef GPU_ENABLED
+#include "gpu/GpuLBM.hpp"
+#else
+#include "cpu/LBM.hpp"
+#endif
 
 #define WIDTH 600
 #define HEIGHT 240
@@ -33,8 +38,13 @@ void run_benchmark(unsigned long steps)
 
 int main(int argc, char** argv)
 {
+
+#ifdef GPU_ENABLED
+    GpuLBM lattice(WIDTH, HEIGHT);
+#else
     LBM lattice(WIDTH, HEIGHT);
+#endif
+
     Engine engine(lattice);
     engine.run();
-//    run_benchmark(100);
 }
