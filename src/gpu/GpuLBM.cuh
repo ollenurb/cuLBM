@@ -32,7 +32,7 @@ private:
     LatticeNode* device_lattice{};
     LatticeNode* device_lattice_t{};
 
-    unsigned BLOCK_DIM = 10;
+    unsigned BLOCK_DIM = 20;
     dim3 dim_block;
     dim3 dim_grid;
     unsigned int SIZE;

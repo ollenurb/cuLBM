@@ -22,17 +22,17 @@ LBM::LBM(unsigned int w, unsigned int h): Simulation(w, h), lattice(w, h), latti
     }
 
     /* Put a 10x10 block of higher density at the center of the lattice */
-//    int size = 10;
-//    int x_center = WIDTH / 2 - (size / 2);
-//    int y_center = HEIGHT / 2 - (size / 2);
-//
-//    for(int x = x_center; x < x_center + size; x++) {
-//        for (int y = y_center; y < y_center + size; y++) {
-//            for(double & i : lattice(x, y).density) {
-//                i += .070;
-//            }
-//        }
-//    }
+    int size = 10;
+    int x_center = WIDTH / 2 - (size / 2);
+    int y_center = HEIGHT / 2 - (size / 2);
+
+    for(int x = x_center; x < x_center + size; x++) {
+        for (int y = y_center; y < y_center + size; y++) {
+            for(double & i : lattice(x, y).density) {
+                i += .070;
+            }
+        }
+    }
 }
 
 LBM::~LBM() = default;
@@ -146,7 +146,6 @@ void LBM::bounce() {
 void LBM::step()
 {
     collide();
-    lattice.print();
     stream();
     bounce();
     lattice.swap(lattice_t);

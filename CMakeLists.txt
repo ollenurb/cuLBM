@@ -43,7 +43,7 @@ target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_11)
 set_target_properties(
         ${LIBRARY_NAME} PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
-        CUDA_ARCHITECTURES 35 50 72
+        CUDA_ARCHITECTURES 50 75 80
 )
 
 # +=============================================+

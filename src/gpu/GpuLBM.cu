@@ -32,9 +32,35 @@ __device__ void bounce()
 
 }
 
-__device__ void stream(LatticeNode *pNode, LatticeNode *pLatticeNode)
+__device__ inline unsigned clamp(unsigned val, unsigned low, unsigned high)
 {
+    return min(max(val, low), high);
+}
 
+__device__ void stream(LatticeNode *lattice, LatticeNode *lattice_t)
+{
+    unsigned x_i = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
+
+    /* Move the fluid to neighbouring sites */
+    unsigned x_index, y_index;
+    unsigned index = x_i * D_HEIGHT + y_i;
+
+    /* "LBM sites along the edges contain fluid that
+     * is always assigned to have the equilibrium number
+     * densities for some fixed density and velocity"
+     * (Schroeder - LBM-Boltzmann Fluid Dynamics)
+     */
+    if(y_i == D_HEIGHT-1 || y_i == 0 || x_i == D_WIDTH-1 || x_i == 0) {
+        lattice_t[x_i * D_HEIGHT + y_i] = D_INITIAL_CONFIG;
+    } else {
+        for(int i = 0; i < Q; i++) {
+            x_index = x_i + D_e[i].x;
+            y_index = y_i + D_e[i].y;
+            index = x_index * D_HEIGHT + y_index;
+            lattice_t[index].density[i] = lattice[index].density[i];
+        }
+    }
 }
 
 __device__ void collide(LatticeNode* lattice)
@@ -87,11 +113,17 @@ __global__ void init_kernel(LatticeNode* lattice)
     unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned index = x_i * D_HEIGHT + y_i;
     lattice[index] = D_INITIAL_CONFIG;
+
+    if(x_i > 10 && x_i < 20 && y_i > 10 && y_i < 20) {
+        for(int i = 0; i < Q; i++)
+            lattice[index].density[i] += 0.02;
+    }
 }
 
 __global__ void step_kernel(LatticeNode* lattice, LatticeNode* lattice_t)
 {
     collide(lattice);
+    __threadfence();
     stream(lattice, lattice_t);
     bounce();
 }
@@ -128,7 +160,9 @@ GpuLBM::GpuLBM(unsigned int w, unsigned int h) : Simulation(w, h) {
 
     cudaMemcpyToSymbol(D_INITIAL_CONFIG, &host_initial_config, sizeof(LatticeNode));
     /* Initialize */
+    printf("Block: %d, %d, %d, Grid: %d, %d, %d", dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y, dim_grid.z);
     init_kernel<<<dim_grid, dim_block>>>(device_lattice);
+    cudaDeviceSynchronize();
 }
 
 GpuLBM::~GpuLBM() {
@@ -151,7 +185,7 @@ void GpuLBM::render(SDL_Texture *screen) {
     for(int y = 0; y < HEIGHT; y++) {
         dest = (Uint32*)((Uint8*) pixels + y * pitch);
         for(int x = 0; x < WIDTH; x++) {
-            b = std::min(host_lattice[y * HEIGHT + x].macroscopic_velocity.modulus() * 4, 1.0);
+            b = std::min(host_lattice[x * HEIGHT + y].macroscopic_velocity.modulus() * 4, 1.0);
             *(dest + x) = utils::HSBtoRGB(0.5, 1.0, b);
         }
     }
@@ -162,4 +196,8 @@ void GpuLBM::step()
 {
     cudaDeviceSynchronize();
     step_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
+    cudaDeviceSynchronize();
+    LatticeNode *tmp = device_lattice;
+    device_lattice = device_lattice_t;
+    device_lattice_t = tmp;
 }

@@ -8,8 +8,8 @@
 #include "cpu/LBM.hpp"
 #endif
 
-#define WIDTH 10
-#define HEIGHT 10
+#define WIDTH 600
+#define HEIGHT 240
 
 //void run_benchmark(unsigned long steps)
 //{
