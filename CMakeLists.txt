@@ -9,7 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/obj")
 
 option(GPU "Enable GPU acceleration" OFF)
-# set(GPU ON)
+set(GPU ON)
 
 # +=============================================+
 # +====+ Setup Headers, Sources and macros +====+
@@ -57,7 +57,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O3")
 # +=============================================+
 # +=========+ Build the executable +============+
 # +=============================================+
-add_executable(${EXECUTABLE_NAME} src/main.cpp)
+add_executable(${EXECUTABLE_NAME} src/main.cu)
 set_property(TARGET ${EXECUTABLE_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 add_dependencies(${EXECUTABLE_NAME} ${LIBRARY_NAME})
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${LIBRARY_NAME})

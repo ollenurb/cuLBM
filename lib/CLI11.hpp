@@ -6341,7 +6341,7 @@ class App {
     /// @name Parsing
     ///@{
     //
-    /// Reset the parsed data
+    /// Reset the parsed device_data
     void clear() {
 
         parsed_ = 0;
