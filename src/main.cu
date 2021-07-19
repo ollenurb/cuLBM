@@ -42,11 +42,11 @@ int main(int argc, char** argv)
 #ifdef GPU_ENABLED
     GpuLBM lattice(WIDTH, HEIGHT);
 #else
-    LBM host_lattice(WIDTH, HEIGHT);
+    LBM lattice(WIDTH, HEIGHT);
 #endif
 
-    lattice.step();
+//    lattice.step();
 
-//    Engine engine(host_lattice);
-//    engine.run();
+    Engine engine(lattice);
+    engine.run();
 }

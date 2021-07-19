@@ -6,12 +6,12 @@
 /* 2 dimensional vector */
 template <typename T>
 struct GpuVector2D {
-    double x;
-    double y;
+    T x;
+    T y;
     __host__ __device__ T mod_sqr() const;
     __host__ __device__ T modulus() const;
     template <typename U>
-    __host__ __device__ inline T operator *(struct GpuVector2D<U> &v) const;
+    __host__ __device__ inline double operator *(struct GpuVector2D<U> &v) const;
 };
 
 /* +============+ Vector2D methods +============+ */
@@ -28,6 +28,6 @@ __host__ __device__ inline T GpuVector2D<T>::modulus() const {
 
 template<typename T>
 template<typename U>
-__host__ __device__ inline T GpuVector2D<T>::operator*(GpuVector2D<U> &v) const {
+__host__ __device__ inline double GpuVector2D<T>::operator*(GpuVector2D<U> &v) const {
     return (v.x * x) + (v.y * y);
 }

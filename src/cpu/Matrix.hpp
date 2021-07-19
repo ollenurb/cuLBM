@@ -53,7 +53,7 @@ void Matrix<T>::print()
     std::cout << std::endl;
     for(int i = 0; i < X; i++) {
         for(int j = 0; j < Y; j++) {
-            std::cout << char(156) << std::setprecision(7) << std::fixed << data[i * X + j].density[0] << " ";
+            std::cout << char(156) << std::setprecision(7) << std::fixed << data[i * X + j].macroscopic_velocity.x << " ";
         }
         std::cout << std::endl;
     }
