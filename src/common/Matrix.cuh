@@ -7,6 +7,8 @@
 #include <iomanip>
 #include "Defines.h"
 
+enum AllocationMode {DEVICE, HOST};
+
 template <typename T>
 class Matrix {
 private:
@@ -16,7 +18,7 @@ private:
     const unsigned int SZ;
 
 public:
-    Matrix(unsigned int x, unsigned int y);
+    Matrix(unsigned int x, unsigned int y, AllocationMode = HOST);
     ~Matrix();
     HOST_DEVICE inline T& operator()(unsigned int i, unsigned int j);
     HOST_DEVICE void swap(Matrix& swappable);
@@ -25,7 +27,14 @@ public:
 
 /* Methods Implementations */
 template<typename T>
-Matrix<T>::Matrix(unsigned int x, unsigned int y) : X(x), Y(y), SZ(x * y) { data = new T[SZ]; }
+Matrix<T>::Matrix(unsigned int x, unsigned int y, AllocationMode type) : X(x), Y(y), SZ(x * y) {
+    /* Allocate the matrix on the host */
+    if(type == DEVICE) {
+        data = new T[SZ];
+    } else {
+        cudaMalloc(&data, sizeof(T) * SZ);
+    }
+}
 
 template<typename T>
 HOST_DEVICE
