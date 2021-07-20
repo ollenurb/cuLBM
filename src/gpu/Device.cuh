@@ -6,10 +6,8 @@
 /*
 * This class represent the device, acting as the device API
 */
-
 class Device {
 private:
-#ifndef __CUDA_ARCH__
 public:
     /* Initialize the device with a WxH simulation */
     void init(unsigned int w, unsigned int h);

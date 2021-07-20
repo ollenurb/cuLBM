@@ -2,8 +2,8 @@
 
 #include <vector>
 #include "SDL.h"
-#include "Matrix.hpp"
-#include "Vector2D.hpp"
+#include "../common/Matrix.hpp"
+#include "../common/Vector2D.hpp"
 #include "../common/Simulation.hpp"
 
 /* Number of velocity vectors */

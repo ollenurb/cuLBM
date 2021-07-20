@@ -1,4 +1,4 @@
-#include "LBM.hpp"
+#include "CpuSimulation.hpp"
 #include "../common/Utils.hpp"
 #include <algorithm>
 

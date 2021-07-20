@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <iomanip>
+#include "Defines.h"
 
 template <typename T>
 class Matrix {
@@ -17,9 +18,9 @@ private:
 public:
     Matrix(unsigned int x, unsigned int y);
     ~Matrix();
-    inline T& operator()(unsigned int i, unsigned int j);
-    void swap(Matrix& swappable);
-    void print();
+    HOST_DEVICE inline T& operator()(unsigned int i, unsigned int j);
+    HOST_DEVICE void swap(Matrix& swappable);
+    HOST_DEVICE void print();
 };
 
 /* Methods Implementations */
@@ -27,9 +28,11 @@ template<typename T>
 Matrix<T>::Matrix(unsigned int x, unsigned int y) : X(x), Y(y), SZ(x * y) { data = new T[SZ]; }
 
 template<typename T>
+HOST_DEVICE
 Matrix<T>::~Matrix() { delete data; }
 
 template<typename T>
+HOST_DEVICE
 inline T& Matrix<T>::operator()(unsigned int i, unsigned int j)
 {
     unsigned int index = i * Y + j;
@@ -40,6 +43,7 @@ inline T& Matrix<T>::operator()(unsigned int i, unsigned int j)
 }
 
 template<typename T>
+HOST_DEVICE
 void Matrix<T>::swap(Matrix &swappable)
 {
     T *tmp = swappable.data;
@@ -48,6 +52,7 @@ void Matrix<T>::swap(Matrix &swappable)
 }
 
 template<typename T>
+HOST_DEVICE
 void Matrix<T>::print()
 {
     std::cout << std::endl;

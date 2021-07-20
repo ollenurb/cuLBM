@@ -1,9 +1,9 @@
 //
 // Created by matteo on 7/18/21.
 //
-#include "GpuLBM.cuh"
-#include "GpuVector2D.cuh"
+#include "GpuSimulation.cuh"
 #include "../common/Utils.hpp"
+#include "../common/Vector2D.hpp"
 
 #define LOG_X 11
 #define LOG_Y 11
@@ -11,14 +11,14 @@
 struct LatticeNode_t {
     double density[Q] = WEIGHTS;
     double total_density = 1.0;
-    GpuVector2D<double> macroscopic_velocity = {0, 0};
+    Vector2D<double> macroscopic_velocity = {0, 0};
 };
 
 __constant__ unsigned int D_WIDTH;
 __constant__ unsigned int D_HEIGHT;
 __constant__ LatticeNode D_INITIAL_CONFIG;
 __constant__ const double D_W[Q] = WEIGHTS;
-__constant__ GpuVector2D<int> D_e[Q] =
+__constant__ Vector2D<int> D_e[Q] =
         {
                 { 0, 0}, { 1,  0}, {0,  1},
                 {-1, 0}, { 0, -1}, {1,  1},
@@ -86,7 +86,7 @@ __device__ void collide(LatticeNode* lattice)
     double total_density;
     double density_eq;
     double e_dp_u;
-    GpuVector2D<double> u{};
+    Vector2D<double> u{};
 
     LatticeNode &cur_node = lattice[index];
     /* Compute the total density of lattice site at position (x, y) */
@@ -139,8 +139,8 @@ __global__ void step_kernel(LatticeNode* lattice, LatticeNode* lattice_t)
     bounce();
 }
 
-GpuLBM::GpuLBM(unsigned int w, unsigned int h) : Simulation(w, h) {
-    GpuVector2D<int> e[Q] =
+GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) {
+    Vector2D<int> e[Q] =
             {
                     { 0, 0}, { 1,  0}, {0,  1},
                     {-1, 0}, { 0, -1}, {1,  1},
@@ -176,13 +176,13 @@ GpuLBM::GpuLBM(unsigned int w, unsigned int h) : Simulation(w, h) {
     cudaDeviceSynchronize();
 }
 
-GpuLBM::~GpuLBM() {
+GpuSimulation::~GpuSimulation() {
     cudaFree(device_lattice);
     cudaFree(device_lattice_t);
     delete host_lattice;
 }
 
-void GpuLBM::render(SDL_Texture *screen) {
+void GpuSimulation::render(SDL_Texture *screen) {
     cudaMemcpy(host_lattice, device_lattice, sizeof(LatticeNode) * SIZE, cudaMemcpyDeviceToHost);
     void *pixels;
     int pitch;
@@ -203,7 +203,7 @@ void GpuLBM::render(SDL_Texture *screen) {
     SDL_UnlockTexture(screen);
 }
 
-void GpuLBM::step()
+void GpuSimulation::step()
 {
     cudaDeviceSynchronize();
     step_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);

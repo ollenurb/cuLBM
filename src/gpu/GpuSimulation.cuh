@@ -4,7 +4,7 @@
 #pragma once
 
 #include "../common/Simulation.hpp"
-#include "Defines.h"
+#include "../common/Defines.h"
 
 /* Number of velocity vectors */
 /* This class represents the 2DQ9 model */
@@ -26,7 +26,7 @@
 
 typedef struct LatticeNode_t LatticeNode;
 
-class GpuLBM : public Simulation
+class GpuSimulation : public Simulation
 {
 private:
     /* +=========+ Variables +=========+ */
@@ -40,8 +40,8 @@ private:
 
 public:
     /* +=========+ Constants +=========+ */
-    GpuLBM(unsigned int, unsigned int);
-    ~GpuLBM();
+    GpuSimulation(unsigned int, unsigned int);
+    ~GpuSimulation();
 
     /* Render the host_lattice state on the screen */
     void render(SDL_Texture*) override;

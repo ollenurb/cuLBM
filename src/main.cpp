@@ -3,7 +3,7 @@
 #include <iostream>
 /* If the GPU compilation flag is enabled, then include the GPU-Specific version */
 #ifdef GPU_ENABLED
-#include "gpu/GpuLBM.cuh"
+#include "gpu/GpuSimulation.cuh"
 #else
 #include "cpu/LBM.hpp"
 #endif
@@ -28,7 +28,7 @@ void run_benchmark(unsigned long steps)
 
 
 #ifdef GPU_ENABLED
-    GpuLBM lattice(WIDTH, HEIGHT);
+    GpuSimulation lattice(WIDTH, HEIGHT);
 #else
     LBM lattice(WIDTH, HEIGHT);
 #endif
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 {
 
 #ifdef GPU_ENABLED
-    GpuLBM lattice(WIDTH, HEIGHT);
+    GpuSimulation lattice(WIDTH, HEIGHT);
 #else
     LBM lattice(WIDTH, HEIGHT);
 #endif
