@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../common/Simulation.hpp"
+#include "Defines.h"
 
 /* Number of velocity vectors */
 /* This class represents the 2DQ9 model */
@@ -21,6 +22,8 @@
 //    GpuVector2D<double> macroscopic_velocity = {0, 0};
 //} LatticeNode;
 
+
+
 typedef struct LatticeNode_t LatticeNode;
 
 class GpuLBM : public Simulation
@@ -28,13 +31,11 @@ class GpuLBM : public Simulation
 private:
     /* +=========+ Variables +=========+ */
     /* In this case we need more variables to hold both the host lattice and device lattice GPU references */
-    LatticeNode* host_lattice{};
-    LatticeNode* device_lattice{};
-    LatticeNode* device_lattice_t{};
+    LatticeNode* host_lattice;
+    LatticeNode* device_lattice;
+    LatticeNode* device_lattice_t;
 
-    unsigned BLOCK_DIM = 20;
-    dim3 dim_block;
-    dim3 dim_grid;
+
     unsigned int SIZE;
 
 public:

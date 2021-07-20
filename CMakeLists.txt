@@ -57,7 +57,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O3")
 # +=============================================+
 # +=========+ Build the executable +============+
 # +=============================================+
-add_executable(${EXECUTABLE_NAME} src/main.cu)
+add_executable(${EXECUTABLE_NAME} src/main.cpp)
 set_property(TARGET ${EXECUTABLE_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 add_dependencies(${EXECUTABLE_NAME} ${LIBRARY_NAME})
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${LIBRARY_NAME})
