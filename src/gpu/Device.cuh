@@ -13,7 +13,6 @@ private:
 public:
     /* Initialize the device with a WxH simulation */
     void init(unsigned int w, unsigned int h);
-    /* */
     void step();
     void blit();
 };
