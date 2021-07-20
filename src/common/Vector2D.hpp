@@ -2,17 +2,20 @@
 // Created by matteo on 7/18/21.
 //
 #pragma once
-#include "Defines.h"
+
+#include "Defines.hpp"
 
 /* 2 dimensional vector */
-template <typename T>
+template<typename T>
 struct Vector2D {
     T x;
     T y;
     HOST_DEVICE T mod_sqr() const;
+
     HOST_DEVICE T modulus() const;
-    template <typename U>
-    HOST_DEVICE inline double operator *(struct Vector2D<U> &v) const;
+
+    template<typename U>
+    HOST_DEVICE inline T operator*(const struct Vector2D<U> &v) const;
 };
 
 /* +============+ Vector2D methods +============+ */
@@ -32,6 +35,6 @@ inline T Vector2D<T>::modulus() const {
 template<typename T>
 template<typename U>
 HOST_DEVICE
-inline double Vector2D<T>::operator*(Vector2D<U> &v) const {
+inline T Vector2D<T>::operator*(const struct Vector2D<U> &v) const {
     return (v.x * x) + (v.y * y);
 }

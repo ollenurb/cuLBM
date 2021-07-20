@@ -9,18 +9,17 @@ Engine::Engine(Simulation &r) : renderizable(r), WIDTH(r.get_width()), HEIGHT(r.
 
 Engine::~Engine() = default;
 
-void Engine::run()
-{
+void Engine::run() {
     unsigned n_frame = 0;
     unsigned long long iterations = 0;
     running = true;
-    while(running) {
+    while (running) {
         process_events();
         /* TODO: Change 10 with AFTER_NFRAMES */
-        if(n_frame == 1) {
+        if (n_frame == 5) {
             renderizable.render(screen);
             SDL_RenderClear(renderer);
-            SDL_RenderCopy(renderer, screen, NULL, NULL);
+            SDL_RenderCopy(renderer, screen, nullptr, nullptr);
             SDL_RenderPresent(renderer);
             n_frame = 0;
             SDL_Delay(60);
@@ -29,23 +28,22 @@ void Engine::run()
         renderizable.step();
         n_frame++;
     }
-    std::cout << "Simulations took " << iterations <<  " iterations" << std::endl;
+    std::cout << "Simulations took " << iterations << " iterations" << std::endl;
 }
 
-void Engine::process_events()
-{
+void Engine::process_events() {
     SDL_Event event;
 
-    while(SDL_PollEvent(&event)) {
-        switch(event.type) {
-        case SDL_KEYDOWN:
-            if(event.key.keysym.sym == SDLK_ESCAPE) {
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            case SDL_KEYDOWN:
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    running = false;
+                }
+                break;
+            case SDL_QUIT:
                 running = false;
-            }
-            break;
-        case SDL_QUIT:
-            running = false;
-            break;
+                break;
         }
     }
 }

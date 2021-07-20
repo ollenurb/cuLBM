@@ -15,3 +15,9 @@
 #else
 #define HOST_DEVICE
 #endif
+
+#ifdef __CUDA_ARCH__
+#define HOST __host__
+#else
+#define HOST
+#endif

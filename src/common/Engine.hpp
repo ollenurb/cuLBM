@@ -4,7 +4,7 @@
 #include "SDL.h"
 
 class Engine {
-    private:
+private:
     const unsigned int WIDTH;
     const unsigned int HEIGHT;
     bool running;
@@ -15,8 +15,10 @@ class Engine {
 
     void process_events();
 
-    public:
-    Engine(Simulation&);
+public:
+    Engine(Simulation &);
+
     ~Engine();
+
     void run();
 };

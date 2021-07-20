@@ -16,14 +16,14 @@ set(GPU ON)
 # +=============================================+
 if (GPU)
     add_compile_definitions(GPU_ENABLED)
-    file(GLOB HEADERS src/common/*.hpp src/gpu/*.cuh)
+    file(GLOB HEADERS src/common/*.hpp src/common/*.cuh src/gpu/*.cuh)
     file(GLOB SOURCES src/common/*.cpp src/gpu/*.cu)
     message(STATUS "Compiling with Hardware acceleration...")
 else ()
     file(GLOB HEADERS src/common/*.hpp src/cpu/*.hpp)
     file(GLOB SOURCES src/common/*.cpp src/cpu/*.cpp)
     message(STATUS "Compiling without Hardware acceleration...")
-endif()
+endif ()
 
 # +=============================================+
 # +========+ Setup libraries headers +==========+
