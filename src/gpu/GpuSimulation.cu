@@ -38,10 +38,15 @@ __global__ void init_kernel(LatticeNode *lattice, LatticeNode *lattice_t) {
 
     /* TODO: TO REMOVE
      * Put a spike of f at the center */
-//    if (x_i > 10 && x_i < 20 && y_i > 10 && y_i < 20) {
-//        for (float &i : lattice[index].f)
-//            i += 0.02;
-//    }
+    if (x_i > 10 && x_i < 20 && y_i > 10 && y_i < 20) {
+        for (float &i : lattice[index].f)
+            i += 0.02;
+    }
+}
+
+__device__ inline unsigned clamp(unsigned val, unsigned l, unsigned h)
+{
+    return min(max(val, l), h);
 }
 
 /* Stream the fluid */
@@ -54,24 +59,17 @@ __device__ void stream(LatticeNode *lattice, LatticeNode *lattice_t) {
     unsigned index, index_t;
     index = index(x_i, y_i);
 
-    /* "LBM sites along the edges contain fluid that
-     * is always assigned to have the equilibrium number
-     * densities for some fixed f and velocity"
-     * (Schroeder - LBM-Boltzmann Fluid Dynamics)
-     * TODO: Needs to be fixed
-     */
-    if (y_i != device::HEIGHT - 1 && y_i != 0 && x_i != device::WIDTH - 1 && x_i != 0) {
-        for (int i = 0; i < Q; i++) {
-            x_t = x_i + device::e[i].x;
-            y_t = y_i + device::e[i].y;
-            index_t = index(x_t, y_t);
-            lattice_t[index_t].f[i] = lattice[index].f[i];
-        }
+    /* Stream away fluid on each lattice site */
+    for (int i = 0; i < Q; i++) {
+        x_t = clamp(x_i + device::e[i].x, 0, device::WIDTH-1);
+        y_t = clamp(y_i + device::e[i].y, 0, device::HEIGHT-1);
+        index_t = index(x_t, y_t);
+        lattice_t[index_t].f[i] = lattice[index].f[i];
     }
 
+    /* Handle boundaries */
     if (y_i == device::HEIGHT - 1 || y_i == 0 || x_i == device::WIDTH - 1 || x_i == 0) {
         lattice_t[index] = device::INITIAL_CONFIG;
-        lattice_t[index].u = device::INITIAL_CONFIG.u;
     }
 }
 
@@ -158,8 +156,7 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
 
     cudaMemcpyToSymbol(device::INITIAL_CONFIG, &tmp_init_conf, sizeof(LatticeNode));
     /* Initialize */
-    printf("Block: %d, %d, %d, Grid: %d, %d, %d\n", dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y,
-           dim_grid.z);
+    printf("Block: %d, %d, %d, Grid: %d, %d, %d\n", dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y, dim_grid.z);
     init_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
     cudaDeviceSynchronize();
 }

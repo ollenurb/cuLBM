@@ -10,8 +10,8 @@
 #include "cpu/CpuSimulation.hpp"
 #endif
 
-#define WIDTH 1600
-#define HEIGHT 1040
+#define WIDTH 600
+#define HEIGHT 240
 
 void run_benchmark(unsigned long steps) {
     using std::chrono::high_resolution_clock;
