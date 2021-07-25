@@ -5,11 +5,11 @@
 
 namespace utils {
 
-    /* Returns the pixel value as an unsigned integer
-    * RGB components can be retrieved using simple bit shifting
-    * R: val << 16
-    * G: val << 8
-    * B: val <<
-    */
-    unsigned int HSBtoRGB(float hue, float saturation, float brightness);
+  /* Returns the pixel value as an unsigned integer
+  * RGB components can be retrieved using simple bit shifting
+  * R: val << 16
+  * G: val << 8
+  * B: val <<
+  */
+  unsigned int HSBtoRGB(float hue, float saturation, float brightness);
 }

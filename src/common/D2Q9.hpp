@@ -15,19 +15,19 @@ namespace D2Q9 {
  * u = u
  * rho = rho
  */
-    typedef struct LatticeNode {
-        float f[Q] = WEIGHTS;
-        Vector2D<float> u = {0, 0};
-    } LatticeNode;
+  typedef struct LatticeNode {
+    float f[Q] = WEIGHTS;
+    Vector2D<float> u = {0, 0};
+  } LatticeNode;
 
-    constexpr static const float VELOCITY = 0.070;
-    constexpr static const float VISCOSITY = 0.020;
-    constexpr static const float OMEGA = 1 / (3 * VISCOSITY + 0.5);
+  constexpr static const float VELOCITY = 0.070;
+  constexpr static const float VISCOSITY = 0.020;
+  constexpr static const float OMEGA = 1 / (3 * VISCOSITY + 0.5);
 
 /* Allowed displacement vectors */
-    constexpr static const Vector2D<int> e[Q] = E;
+  constexpr static const Vector2D<int> e[Q] = E;
 
 /* Weights associated with each direction */
-    const float W[Q] = WEIGHTS;
+  const float W[Q] = WEIGHTS;
 
 }

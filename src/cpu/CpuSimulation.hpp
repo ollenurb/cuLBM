@@ -18,55 +18,55 @@
  * rho = rho
  */
 typedef struct LatticeNode {
-    double density[Q] = WEIGHTS;
-    double total_density = 1.0;
-    Vector2D<double> macroscopic_velocity = {0, 0};
+  double density[Q] = WEIGHTS;
+  double total_density = 1.0;
+  Vector2D<double> macroscopic_velocity = {0, 0};
 } LatticeNode;
 
 class LBM : public Simulation {
 private:
-    /* +=========+ Constants +=========+ */
-    const double VELOCITY = 0.070;
-    const double VISCOSITY = 0.020;
-    const double OMEGA = 1 / (3 * VISCOSITY + 0.5);
+  /* +=========+ Constants +=========+ */
+  const double VELOCITY = 0.070;
+  const double VISCOSITY = 0.020;
+  const double OMEGA = 1 / (3 * VISCOSITY + 0.5);
 
-    /* Allowed displacement vectors */
-    const Vector2D<int> e[Q] =
-            {
-                    {0,  0},
-                    {1,  0},
-                    {0,  1},
-                    {-1, 0},
-                    {0,  -1},
-                    {1,  1},
-                    {-1, 1},
-                    {-1, -1},
-                    {1,  -1}
-            };
+  /* Allowed displacement vectors */
+  const Vector2D<int> e[Q] =
+          {
+                  {0,  0},
+                  {1,  0},
+                  {0,  1},
+                  {-1, 0},
+                  {0,  -1},
+                  {1,  1},
+                  {-1, 1},
+                  {-1, -1},
+                  {1,  -1}
+          };
 
-    /* Weights associated with each direction */
-    const double W[Q] = WEIGHTS;
+  /* Weights associated with each direction */
+  const double W[Q] = WEIGHTS;
 
-    /* +=========+ Variables +=========+ */
-    Matrix<LatticeNode> lattice;
-    Matrix<LatticeNode> lattice_t;
-    LatticeNode initial_config;
+  /* +=========+ Variables +=========+ */
+  Matrix<LatticeNode> lattice;
+  Matrix<LatticeNode> lattice_t;
+  LatticeNode initial_config;
 
-    /* +=========+ LBM Steps +=========+ */
-    void stream();
+  /* +=========+ LBM Steps +=========+ */
+  void stream();
 
-    void collide();
+  void collide();
 
-    void bounce();
+  void bounce();
 
 public:
-    LBM(unsigned int, unsigned int);
+  LBM(unsigned int, unsigned int);
 
-    ~LBM();
+  ~LBM();
 
-    /* Render the lattice state on the screen */
-    void render(SDL_Texture *) override;
+  /* Render the lattice state on the screen */
+  void render(SDL_Texture *) override;
 
-    /* Perform a simulation step: f(t) -> f(t + dt) */
-    void step() override;
+  /* Perform a simulation step: f(t) -> f(t + dt) */
+  void step() override;
 };
