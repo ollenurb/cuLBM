@@ -2,7 +2,8 @@
 #include "../common/Utils.hpp"
 #include <algorithm>
 
-LBM::LBM(unsigned int w, unsigned int h) : Simulation(w, h), lattice(w, h),
+LBM::LBM(unsigned int w, unsigned int h) : Simulation(w, h),
+                                           lattice(w, h),
                                            lattice_t(w, h) {
   double e_dp_u;
   /* Initialize the initial configuration */

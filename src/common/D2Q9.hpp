@@ -17,7 +17,8 @@ namespace D2Q9 {
  */
   typedef struct LatticeNode {
     float f[Q] = WEIGHTS;
-    Vector2D<float> u = {0, 0};
+    Vector2D<float> u = {0.0f, 0.0f};
+    bool obstacle = false;
   } LatticeNode;
 
   constexpr static const float VELOCITY = 0.070;

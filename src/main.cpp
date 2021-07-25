@@ -10,7 +10,7 @@
 #include "cpu/CpuSimulation.hpp"
 #endif
 
-#define WIDTH 600
+#define WIDTH 660
 #define HEIGHT 240
 
 void run_benchmark(unsigned long steps) {

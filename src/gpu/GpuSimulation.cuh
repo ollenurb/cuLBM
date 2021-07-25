@@ -7,7 +7,7 @@
 #include "../common/Defines.hpp"
 #include "../common/D2Q9.hpp"
 
-using LatticeNode = D2Q9::LatticeNode;
+using namespace D2Q9;
 
 class GpuSimulation : public Simulation {
 private:
