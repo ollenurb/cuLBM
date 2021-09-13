@@ -10,8 +10,8 @@
 #include "cpu/CpuSimulation.hpp"
 #endif
 
-#define WIDTH 660
-#define HEIGHT 240
+#define WIDTH 1000
+#define HEIGHT 1000
 
 void run_benchmark(unsigned long steps) {
   using std::chrono::high_resolution_clock;
@@ -57,10 +57,5 @@ int main(int argc, char **argv) {
 #else
   CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
-
-//    lattice.step();
-
-  Engine engine(lattice);
-  engine.run();
-//    run_benchmark(1000);
+  run_benchmark(10000);
 }
