@@ -100,7 +100,7 @@ __device__ void collide(LatticeNode *lattice) {
     for (int i = 0; i < Q; i++) {
       total_density += cur_node.f[i];
       /* Accumulate the f inside each component of flow_velocity */
-      new_u.x += device::e[i].x * cur_node.f[i] ; // U_{x} component
+      new_u.x += device::e[i].x * cur_node.f[i]; // U_{x} component
       new_u.y += device::e[i].y * cur_node.f[i]; // U_{y} component
     }
     /* Compute average to get the actual value of flow_velocity */
@@ -119,7 +119,7 @@ __device__ void collide(LatticeNode *lattice) {
   }
 }
 
-/* Bounce back fluid on boundaries/obstacles */
+/* Bounce back fluid on obstacles */
 __device__ void bounce(LatticeNode *lattice_t) {
   unsigned x_i = blockIdx.x * blockDim.x + threadIdx.x;
   unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
@@ -127,21 +127,18 @@ __device__ void bounce(LatticeNode *lattice_t) {
   LatticeNode &cur_node = lattice_t[index];
 
   /* Sadly, lots of threads are going to diverge here */
-  if(x_i > 0 && x_i < device::WIDTH && y_i > 0 && y_i < device::HEIGHT) {
-    if(cur_node.obstacle) {
-      lattice_t[index((x_i + 1), y_i)].f[1] += cur_node.f[3];
-      lattice_t[index(x_i, (y_i + 1))].f[2] += cur_node.f[4];
-      lattice_t[index((x_i - 1), y_i)].f[3] += cur_node.f[1];
-      lattice_t[index(x_i, (y_i - 1))].f[4] += cur_node.f[2];
-      lattice_t[index((x_i + 1), (y_i + 1))].f[5] += cur_node.f[7];
-      lattice_t[index((x_i - 1), (y_i + 1))].f[6] += cur_node.f[8];
-      lattice_t[index((x_i - 1), (y_i - 1))].f[7] += cur_node.f[5];
-      lattice_t[index((x_i + 1), (y_i - 1))].f[8] += cur_node.f[6];
+  if(cur_node.obstacle) {
+    lattice_t[index((x_i + 1), y_i)].f[1] += cur_node.f[3];
+    lattice_t[index(x_i, (y_i + 1))].f[2] += cur_node.f[4];
+    lattice_t[index((x_i - 1), y_i)].f[3] += cur_node.f[1];
+    lattice_t[index(x_i, (y_i - 1))].f[4] += cur_node.f[2];
+    lattice_t[index((x_i + 1), (y_i + 1))].f[5] += cur_node.f[7];
+    lattice_t[index((x_i - 1), (y_i + 1))].f[6] += cur_node.f[8];
+    lattice_t[index((x_i - 1), (y_i - 1))].f[7] += cur_node.f[5];
+    lattice_t[index((x_i + 1), (y_i - 1))].f[8] += cur_node.f[6];
 
-      for(int i = 1; i < Q; i++) {
-        cur_node.f[i] = 0;
-      }
-
+    for(int i = 1; i < Q; i++) {
+      cur_node.f[i] = 0;
     }
   }
 }
@@ -217,7 +214,7 @@ void GpuSimulation::render(SDL_Texture *screen) {
     dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
     for (int x = 0; x < WIDTH; x++) {
       b = std::min(host_lattice[x * HEIGHT + y].u.modulus() * 4, 1.0f);
-      *(dest + x) = utils::HSBtoRGB(0.5, 1.0, b);
+      *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
     }
   }
   SDL_UnlockTexture(screen);

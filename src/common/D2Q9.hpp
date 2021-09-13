@@ -11,9 +11,8 @@
 
 namespace D2Q9 {
 /* A lattice Node
- * f[i] = f_i
- * u = u
- * rho = rho
+ * f[i] = lattice f
+ * u = velocity vector
  */
   typedef struct LatticeNode {
     float f[Q] = WEIGHTS;
@@ -30,5 +29,4 @@ namespace D2Q9 {
 
 /* Weights associated with each direction */
   const float W[Q] = WEIGHTS;
-
 }

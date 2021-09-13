@@ -9,7 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/obj")
 
 option(GPU "Enable GPU acceleration" OFF)
-set(GPU ON)
+set(GPU OFF)
 
 # +=============================================+
 # +====+ Setup Headers, Sources and macros +====+

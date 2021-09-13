@@ -33,7 +33,7 @@ void run_benchmark(unsigned long steps) {
 #ifdef GPU_ENABLED
   GpuSimulation lattice(WIDTH, HEIGHT);
 #else
-  LBM lattice(WIDTH, HEIGHT);
+  CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
 
   auto t0 = high_resolution_clock::now();
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 #ifdef GPU_ENABLED
   GpuSimulation lattice(WIDTH, HEIGHT);
 #else
-  LBM lattice(WIDTH, HEIGHT);
+  CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
 
 //    lattice.step();

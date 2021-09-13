@@ -2,21 +2,19 @@
 #include "../common/Utils.hpp"
 #include <algorithm>
 
-LBM::LBM(unsigned int w, unsigned int h) : Simulation(w, h),
-                                           lattice(w, h),
-                                           lattice_t(w, h) {
-  double e_dp_u;
+CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
+                                                               lattice(w, h),
+                                                               lattice_t(w, h) {
+  float e_dp_u;
   /* Initialize the initial configuration */
-  initial_config.macroscopic_velocity.x = VELOCITY;
-  initial_config.macroscopic_velocity.y = 0;
-  /* Assign each lattice with the equilibrium density */
+  initial_config.u.x = VELOCITY;
+  initial_config.u.y = 0;
+  /* Assign each lattice with the equilibrium f */
   for (int i = 0; i < Q; i++) {
-    e_dp_u = e[i] * initial_config.macroscopic_velocity;
-    initial_config.density[i] =
-            W[i] * (1 + (3 * e_dp_u) + (4.5 * (e_dp_u * e_dp_u)) -
-                    (1.5 * initial_config.macroscopic_velocity.mod_sqr()));
+    e_dp_u = initial_config.u * e[i];
+    initial_config.f[i] = W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * initial_config.u.mod_sqr()));
   }
-  /* Initialize the simulation lattices to the initial configuration */
+  /* Assign the simulation lattices with initial configuration's values */
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
       /* Initialize flow velocity */
@@ -24,23 +22,24 @@ LBM::LBM(unsigned int w, unsigned int h) : Simulation(w, h),
     }
   }
 
-  /* Put a 10x10 block of higher density at the center of the lattice */
+  /* Put a 10x10 block of higher f at the center of the lattice */
+  /* TODO: Remove it, it's here just for testing purposes */
   int size = 10;
-  int x_center = WIDTH / 2 - (size / 2);
-  int y_center = HEIGHT / 2 - (size / 2);
+  unsigned x_center = WIDTH / 2 - (size / 2);
+  unsigned y_center = HEIGHT / 2 - (size / 2);
 
-  for (int x = x_center; x < x_center + size; x++) {
-    for (int y = y_center; y < y_center + size; y++) {
-      for (double &i : lattice(x, y).density) {
+  for (unsigned x = x_center; x < x_center + size; x++) {
+    for (unsigned y = y_center; y < y_center + size; y++) {
+      for (float &i : lattice(x, y).f) {
         i += .070;
       }
     }
   }
 }
 
-LBM::~LBM() = default;
+CpuSimulation::~CpuSimulation() = default;
 
-void LBM::render(SDL_Texture *screen) {
+void CpuSimulation::render(SDL_Texture *screen) {
   /* From Stack Overflow: void **pixels is a pointer-to-a-pointer; these are
    * typically used (in this kind of context) where the data is of a pointer
    * type but memory management is handled by the function you call.
@@ -58,8 +57,8 @@ void LBM::render(SDL_Texture *screen) {
   for (int y = 0; y < HEIGHT; y++) {
     dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
     for (int x = 0; x < WIDTH; x++) {
-      b = std::min(lattice(x, y).macroscopic_velocity.modulus() * 4, 1.0);
-      *(dest + x) = utils::HSBtoRGB(0.5, 1.0, b);
+      b = std::min(lattice(x, y).u.modulus() * 4, 1.0f);
+      *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
     }
   }
   SDL_UnlockTexture(screen);
@@ -69,7 +68,7 @@ inline unsigned clamp(unsigned val, unsigned low, unsigned high) {
   return std::min(std::max(val, low), high);
 }
 
-void LBM::stream() {
+void CpuSimulation::stream() {
   /* Move the fluid to neighbouring sites */
   unsigned x_index, y_index;
 
@@ -78,15 +77,15 @@ void LBM::stream() {
       for (int i = 0; i < Q; i++) {
         x_index = clamp(x + e[i].x, 0, WIDTH - 1);
         y_index = clamp(y + e[i].y, 0, HEIGHT - 1);
-        lattice_t(x_index, y_index).density[i] = lattice(x, y).density[i];
+        lattice_t(x_index, y_index).f[i] = lattice(x, y).f[i];
       }
     }
   }
 
-  /* "LBM sites along the edges contain fluid that
+  /* "CpuSimulation sites along the edges contain fluid that
    * is always assigned to have the equilibrium number
-   * densities for some fixed density and velocity"
-   * (Schroeder - LBM-Boltzmann Fluid Dynamics)
+   * densities for some fixed f and velocity"
+   * (Schroeder - CpuSimulation-Boltzmann Fluid Dynamics)
    */
   for (int x = 0; x < WIDTH; x++) {
     lattice_t(x, 0) = initial_config;
@@ -99,54 +98,48 @@ void LBM::stream() {
   }
 }
 
-void LBM::collide() {
-  double total_density;
-  double density_eq;
-  double e_dp_u;
-  double mod_u;
-
-  Vector2D<double> u{};
+void CpuSimulation::collide() {
+  float total_density;
+  float f_eq;
+  float e_dp_u;
+  Vector2D<float> new_u{};
 
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
       LatticeNode &cur_node = lattice(x, y);
-      /* Compute the total density of lattice site at position (x, y) */
-      total_density = 0.0;
-      u.x = u.y = 0.0;
+      /* Compute the total f of lattice site at position (x, y) */
+      total_density = 0;
+      new_u.x = new_u.y = 0;
 
       for (int i = 0; i < Q; i++) {
-        total_density += cur_node.density[i];
-        /* Accumulate the density inside each component of flow_velocity */
-        u.x += cur_node.density[i] * e[i].x; // U_{x} component
-        u.y += cur_node.density[i] * e[i].y; // U_{y} component
+        total_density += cur_node.f[i];
+        /* Accumulate the f inside each component of flow_velocity */
+        new_u.x += static_cast<float>(e[i].x) * cur_node.f[i]; // U_{x} component
+        new_u.y += static_cast<float>(e[i].y) * cur_node.f[i]; // U_{y} component
       }
 
       /* Compute average to get the actual value of flow_velocity */
       /* "Cast" to 0 if the velocity is negative */
-      u.x = std::max(0.0, u.x / total_density);
-      u.y = std::max(0.0, u.y / total_density);
+      new_u.x = std::max(0.0f, new_u.x / total_density);
+      new_u.y = std::max(0.0f, new_u.y / total_density);
 
       /* Compute densities at thermal equilibrium */
       /* Equation (8) */
       for (int i = 0; i < Q; i++) {
-        e_dp_u = e[i] * u;
-        density_eq =
-                total_density * W[i] *
-                (1 + (3 * e_dp_u) + (4.5 * (e_dp_u * e_dp_u)) -
-                 (1.5 * u.mod_sqr()));
-        cur_node.density[i] += OMEGA * (density_eq - cur_node.density[i]);
+        e_dp_u = new_u * e[i];
+        f_eq = total_density * W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * new_u.mod_sqr()));
+        cur_node.f[i] += OMEGA * (f_eq - cur_node.f[i]);
       }
-      cur_node.total_density = total_density;
-      cur_node.macroscopic_velocity = u;
+      cur_node.u = new_u;
     }
   }
 }
 
-void LBM::bounce() {
+void CpuSimulation::bounce() {
   // TODO: Implement bounce back
 }
 
-void LBM::step() {
+void CpuSimulation::step() {
   collide();
   stream();
   bounce();

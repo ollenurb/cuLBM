@@ -1,8 +1,8 @@
 #include <iostream>
 #include "Engine.hpp"
 
-Engine::Engine(Simulation &r) : renderizable(r), WIDTH(r.get_width()),
-                                HEIGHT(r.get_height()) {
+Engine::Engine(Simulation &r) : WIDTH(r.get_width()),
+                                HEIGHT(r.get_height()), renderizable(r) {
   running = false;
   SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
   screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
