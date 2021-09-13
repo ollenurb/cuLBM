@@ -30,8 +30,10 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
 
   for (unsigned x = x_center; x < x_center + size; x++) {
     for (unsigned y = y_center; y < y_center + size; y++) {
-      for (float &i : lattice(x, y).f) {
-        i += .070;
+      lattice(x, y).obstacle = lattice_t(x, y).obstacle = true;
+      for (int i = 0; i < Q; i++) {
+        lattice(x, y).f[i] = lattice_t(x, y).f[i] = 0;
+        lattice(x, y).u = lattice_t(x, y).u = {0, 0};
       }
     }
   }
@@ -50,8 +52,7 @@ void CpuSimulation::render(SDL_Texture *screen) {
   float b;
 
   if (SDL_LockTexture(screen, nullptr, &pixels, &pitch) < 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n",
-                 SDL_GetError());
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
   }
 
   for (int y = 0; y < HEIGHT; y++) {
@@ -136,7 +137,25 @@ void CpuSimulation::collide() {
 }
 
 void CpuSimulation::bounce() {
-  // TODO: Implement bounce back
+  for (int x = 1; x < WIDTH-1; x++) {
+    for (int y = 1; y < HEIGHT-1; y++) {
+      LatticeNode &cur_node = lattice_t(x, y);
+      if (cur_node.obstacle) {
+        lattice_t((x + 1), y).f[1] += cur_node.f[3];
+        lattice_t(x, (y + 1)).f[2] += cur_node.f[4];
+        lattice_t((x - 1), y).f[3] += cur_node.f[1];
+        lattice_t(x, (y - 1)).f[4] += cur_node.f[2];
+        lattice_t((x + 1), (y + 1)).f[5] += cur_node.f[7];
+        lattice_t((x - 1), (y + 1)).f[6] += cur_node.f[8];
+        lattice_t((x - 1), (y - 1)).f[7] += cur_node.f[5];
+        lattice_t((x + 1), (y - 1)).f[8] += cur_node.f[6];
+
+        for (int i = 1; i < Q; i++) {
+          cur_node.f[i] = 0;
+        }
+      }
+    }
+  }
 }
 
 void CpuSimulation::step() {
