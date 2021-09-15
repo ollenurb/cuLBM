@@ -9,7 +9,7 @@ namespace utils {
   unsigned int HSBtoRGB(float hue, float saturation, float brightness) {
     int r = 0, g = 0, b = 0;
     if (saturation == 0) {
-      r = g = b = lround(brightness * 255.0f + 0.5f);
+      r = g = b = std::floor(brightness * 255.0f + 0.5f);
     } else {
       float h = (hue - (float) std::floor(hue)) * 6.0f;
       float f = h - (float) std::floor(h);
@@ -18,34 +18,34 @@ namespace utils {
       float t = brightness * (1.0f - (saturation * (1.0f - f)));
       switch ((unsigned) h) {
         case 0:
-          r = lround(brightness * 255.0f + 0.5f);
-          g = lround(t * 255.0f + 0.5f);
-          b = lround(p * 255.0f + 0.5f);
+          r = std::floor(brightness * 255.0f + 0.5f);
+          g = std::floor(t * 255.0f + 0.5f);
+          b = std::floor(p * 255.0f + 0.5f);
           break;
         case 1:
-          r = lround(q * 255.0f + 0.5f);
-          g = lround(brightness * 255.0f + 0.5f);
-          b = lround(p * 255.0f + 0.5f);
+          r = std::floor(q * 255.0f + 0.5f);
+          g = std::floor(brightness * 255.0f + 0.5f);
+          b = std::floor(p * 255.0f + 0.5f);
           break;
         case 2:
-          r = lround(p * 255.0f + 0.5f);
-          g = lround(brightness * 255.0f + 0.5f);
-          b = lround(t * 255.0f + 0.5f);
+          r = std::floor(p * 255.0f + 0.5f);
+          g = std::floor(brightness * 255.0f + 0.5f);
+          b = std::floor(t * 255.0f + 0.5f);
           break;
         case 3:
-          r = lround(p * 255.0f + 0.5f);
-          g = lround(q * 255.0f + 0.5f);
-          b = lround(brightness * 255.0f + 0.5f);
+          r = std::floor(p * 255.0f + 0.5f);
+          g = std::floor(q * 255.0f + 0.5f);
+          b = std::floor(brightness * 255.0f + 0.5f);
           break;
         case 4:
-          r = lround(t * 255.0f + 0.5f);
-          g = lround(p * 255.0f + 0.5f);
-          b = lround(brightness * 255.0f + 0.5f);
+          r = std::floor(t * 255.0f + 0.5f);
+          g = std::floor(p * 255.0f + 0.5f);
+          b = std::floor(brightness * 255.0f + 0.5f);
           break;
         case 5:
-          r = lround(brightness * 255.0f + 0.5f);
-          g = lround(p * 255.0f + 0.5f);
-          b = lround(q * 255.0f + 0.5f);
+          r = std::floor(brightness * 255.0f + 0.5f);
+          g = std::floor(p * 255.0f + 0.5f);
+          b = std::floor(q * 255.0f + 0.5f);
           break;
       }
     }

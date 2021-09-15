@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "SDL.h"
-#include "../common/Matrix.cuh"
+#include "Matrix.hpp"
 #include "../common/D2Q9.hpp"
 #include "../common/Simulation.hpp"
 

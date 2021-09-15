@@ -21,7 +21,7 @@ namespace device {
   CONSTANT unsigned int WIDTH;
   CONSTANT unsigned int HEIGHT;
   CONSTANT LatticeNode INITIAL_CONFIG;
-  CONSTANT float W[Q];
+  CONSTANT Real W[Q];
   CONSTANT Vector2D<int> e[Q];
 }
 
@@ -85,16 +85,16 @@ __device__ void collide(LatticeNode *lattice) {
   unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
   unsigned index = index(x_i, y_i);
 
-  float total_density;
-  float f_eq;
-  float e_dp_u;
-  Vector2D<float> new_u{};
+  Real total_density;
+  Real f_eq;
+  Real e_dp_u;
+  Vector2D<Real> new_u{};
   LatticeNode &cur_node = lattice[index];
 
   if(!cur_node.obstacle) {
     /* Compute the total f of lattice site at position (x, y) */
-    total_density = 0.0;
-    new_u.x = new_u.y = 0.0;
+    total_density = 0;
+    new_u.x = new_u.y = 0;
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -162,7 +162,7 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
   cudaMemcpyToSymbol(device::WIDTH, &WIDTH, sizeof(unsigned int));
   cudaMemcpyToSymbol(device::HEIGHT, &HEIGHT, sizeof(unsigned int));
   cudaMemcpyToSymbol(device::e, &D2Q9::e, sizeof(Vector2D<int>) * Q);
-  cudaMemcpyToSymbol(device::W, &D2Q9::W, sizeof(float) * Q);
+  cudaMemcpyToSymbol(device::W, &D2Q9::W, sizeof(Real) * Q);
 
   cudaMalloc(&device_lattice, sizeof(LatticeNode) * SIZE);
   cudaMalloc(&device_lattice_t, sizeof(LatticeNode) * SIZE);
@@ -170,15 +170,14 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
   host_lattice = new LatticeNode[SIZE];
 
   /* Initialize the initial configuration */
-  float e_dp_u;
+  Real e_dp_u;
   LatticeNode tmp_init_conf;
   tmp_init_conf.u.x = D2Q9::VELOCITY;
   tmp_init_conf.u.y = 0;
   /* Assign each lattice with the equilibrium f */
   for (int i = 0; i < Q; i++) {
     e_dp_u = tmp_init_conf.u * D2Q9::e[i];
-    tmp_init_conf.f[i] =
-            D2Q9::W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * tmp_init_conf.u.mod_sqr()));
+    tmp_init_conf.f[i] = D2Q9::W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * tmp_init_conf.u.mod_sqr()));
   }
 
   cudaMemcpyToSymbol(device::INITIAL_CONFIG, &tmp_init_conf,
@@ -204,7 +203,7 @@ void GpuSimulation::render(SDL_Texture *screen) {
   void *pixels;
   int pitch;
   Uint32 *dest;
-  float b;
+  Real b;
 
   if (SDL_LockTexture(screen, nullptr, &pixels, &pitch) < 0) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
@@ -213,7 +212,7 @@ void GpuSimulation::render(SDL_Texture *screen) {
   for (int y = 0; y < HEIGHT; y++) {
     dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
     for (int x = 0; x < WIDTH; x++) {
-      b = std::min(host_lattice[x * HEIGHT + y].u.modulus() * 4, 1.0f);
+      b = std::min(host_lattice[x * HEIGHT + y].u.modulus() * 4, static_cast<Real>(1));
       *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
     }
   }

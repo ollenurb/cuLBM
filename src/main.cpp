@@ -3,15 +3,13 @@
 #include <iostream>
 /* If the GPU compilation flag is enabled, then include the GPU-Specific version */
 #ifdef GPU_ENABLED
-
 #include "gpu/GpuSimulation.cuh"
-
 #else
 #include "cpu/CpuSimulation.hpp"
 #endif
 
-#define WIDTH 1000
-#define HEIGHT 1000
+#define WIDTH 640
+#define HEIGHT 200
 
 void run_benchmark(unsigned long steps) {
   using std::chrono::high_resolution_clock;
@@ -57,5 +55,7 @@ int main(int argc, char **argv) {
 #else
   CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
-  run_benchmark(10000);
+//  run_benchmark(10000);
+  Engine engine(lattice);
+  engine.run();
 }

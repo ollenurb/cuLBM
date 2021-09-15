@@ -4,6 +4,9 @@
 
 #pragma once
 
+// Select precision
+typedef float Real;
+
 #ifdef __CUDA_ARCH__
 #define CONSTANT __constant__
 #else

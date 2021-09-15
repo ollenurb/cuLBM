@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "Defines.hpp"
+#include "../common/Defines.hpp"
 
 /* 2 dimensional vector */
 template<typename T>

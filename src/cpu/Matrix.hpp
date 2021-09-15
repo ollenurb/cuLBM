@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <iomanip>
-#include "Defines.hpp"
+#include "../common/Defines.hpp"
 
 template<typename T>
 class Matrix {
