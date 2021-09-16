@@ -1,4 +1,4 @@
-#include "common/Engine.hpp"
+#include "common/engines/SdlEngine.hpp"
 #include <chrono>
 #include <iostream>
 /* If the GPU compilation flag is enabled, then include the GPU-Specific version */
@@ -56,6 +56,6 @@ int main(int argc, char **argv) {
   CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
 //  run_benchmark(10000);
-  Engine engine(lattice);
+  SdlEngine engine(lattice);
   engine.run();
 }

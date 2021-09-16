@@ -176,8 +176,7 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
   /* Initialize the initial configuration */
   Real e_dp_u;
   LatticeNode tmp_init_conf;
-  tmp_init_conf.u.x = D2Q9::VELOCITY;
-  tmp_init_conf.u.y = 0;
+  tmp_init_conf.u = D2Q9::VELOCITY;
   /* Assign each lattice with the equilibrium f */
   for (int i = 0; i < Q; i++) {
     e_dp_u = tmp_init_conf.u * D2Q9::e[i];
@@ -202,7 +201,15 @@ GpuSimulation::~GpuSimulation() {
   delete host_lattice;
 }
 
-void GpuSimulation::render(SDL_Texture *screen) {
+void GpuSimulation::step() {
+  cudaDeviceSynchronize();
+  step_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
+  cudaDeviceSynchronize();
+  /* Swap pointers */
+  std::swap(device_lattice_t, device_lattice);
+}
+
+void GpuSimulation::render_SDL(SDL_Texture *screen) {
   cudaMemcpy(host_lattice, device_lattice, sizeof(LatticeNode) * SIZE, cudaMemcpyDeviceToHost);
   void *pixels;
   int pitch;
@@ -223,10 +230,6 @@ void GpuSimulation::render(SDL_Texture *screen) {
   SDL_UnlockTexture(screen);
 }
 
-void GpuSimulation::step() {
-  cudaDeviceSynchronize();
-  step_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
-  cudaDeviceSynchronize();
-  /* Swap pointers */
-  std::swap(device_lattice_t, device_lattice);
+void GpuSimulation::render_VTK(FILE *) {
+
 }

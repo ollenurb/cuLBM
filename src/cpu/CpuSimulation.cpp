@@ -39,7 +39,7 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
 
 CpuSimulation::~CpuSimulation() = default;
 
-void CpuSimulation::render(SDL_Texture *screen) {
+void CpuSimulation::render_SDL(SDL_Texture *screen) {
   /* From Stack Overflow: void **pixels is a pointer-to-a-pointer; these are
    * typically used (in this kind of context) where the data is of a pointer
    * type but memory management is handled by the function you call.

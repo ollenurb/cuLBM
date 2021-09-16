@@ -28,7 +28,7 @@ public:
   ~CpuSimulation();
 
   /* Render the lattice state on the screen */
-  void render(SDL_Texture *) override;
+  void render_SDL(SDL_Texture *) override;
 
   /* Perform a simulation step: f(t) -> f(t + dt) */
   void step() override;

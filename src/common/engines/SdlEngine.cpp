@@ -1,17 +1,16 @@
 #include <iostream>
-#include "Engine.hpp"
+#include "SdlEngine.hpp"
 
-Engine::Engine(Simulation &r) : WIDTH(r.get_width()),
-                                HEIGHT(r.get_height()), renderizable(r) {
+SdlEngine::SdlEngine(Simulation &r) : WIDTH(r.get_width()),
+                                HEIGHT(r.get_height()), simulation(r) {
   running = false;
   SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
-  screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
-                             SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
+  screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
 }
 
-Engine::~Engine() = default;
+SdlEngine::~SdlEngine() = default;
 
-void Engine::run() {
+void SdlEngine::run() {
   unsigned n_frame = 0;
   unsigned long long iterations = 0;
   running = true;
@@ -19,7 +18,7 @@ void Engine::run() {
     process_events();
     /* TODO: Change 10 with AFTER_NFRAMES */
     if (n_frame == 5) {
-      renderizable.render(screen);
+      simulation.render_SDL(screen);
       SDL_RenderClear(renderer);
       SDL_RenderCopy(renderer, screen, nullptr, nullptr);
       SDL_RenderPresent(renderer);
@@ -27,13 +26,13 @@ void Engine::run() {
       SDL_Delay(60);
       iterations++;
     }
-    renderizable.step();
+    simulation.step();
     n_frame++;
   }
   std::cout << "Simulations took " << iterations << " iterations" << std::endl;
 }
 
-void Engine::process_events() {
+void SdlEngine::process_events() {
   SDL_Event event;
 
   while (SDL_PollEvent(&event)) {

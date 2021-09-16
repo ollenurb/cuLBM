@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Simulation.hpp"
+#include "../Simulation.hpp"
 #include "SDL.h"
 
-class Engine {
+class SdlEngine {
 private:
   const unsigned int WIDTH;
   const unsigned int HEIGHT;
   bool running;
-  Simulation &renderizable;
+  Simulation &simulation;
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *screen;
@@ -16,9 +16,7 @@ private:
   void process_events();
 
 public:
-  Engine(Simulation &);
-
-  ~Engine();
-
+  explicit SdlEngine(Simulation &);
+  ~SdlEngine();
   void run();
 };

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+ cmake_minimum_required(VERSION 3.20)
 
 # +==============+ Setup Basic Infos +==============+
 set(PROJECT_NAME LBM)
@@ -16,12 +16,12 @@ set(GPU ON)
 # +=============================================+
 if (GPU)
     add_compile_definitions(GPU_ENABLED)
-    file(GLOB HEADERS src/common/*.hpp src/common/*.cuh src/gpu/*.cuh)
-    file(GLOB SOURCES src/common/*.cpp src/gpu/*.cu)
-    message(STATUS "Compiling with Hardware acceleration...")
+    file(GLOB HEADERS src/common/*.hpp  src/common/engines/*.hpp src/common/*.cuh src/gpu/*.cuh)
+    file(GLOB SOURCES src/common/*.cpp  src/common/engines/*.cpp src/gpu/*.cu)
+    message(STATUS "Compiling with Hard ware acceleration...")
 else ()
-    file(GLOB HEADERS src/common/*.hpp src/cpu/*.hpp)
-    file(GLOB SOURCES src/common/*.cpp src/cpu/*.cpp)
+    file(GLOB HEADERS src/common/*.hpp src/common/engines/*.hpp src/cpu/*.hpp)
+    file(GLOB SOURCES src/common/*.cpp src/common/engines/*.cpp src/cpu/*.cpp)
     message(STATUS "Compiling without Hardware acceleration...")
 endif ()
 
