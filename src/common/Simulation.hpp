@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SDL.h"
+#include "D2Q9.hpp"
 
 class Simulation {
 protected:
@@ -10,19 +11,14 @@ protected:
 public:
   Simulation(unsigned int w, unsigned int h) : WIDTH(w), HEIGHT(h) {}
 
-  /* TODO: IMPROVEMENT: It is possible to improve this API by abstracting away the
-   * implementation details.  SDL_Texture is basically a canvas on which the
-   * user is going to write on. It can be replaced by a MatrixSync of dimension
-   * [width][height] of colors. Colors can be represented as a 32bit unsigned
-   * int numbers. In this way, the SdlEngine will be the only one responsible
-   * for calling the SDL API */
+  /* TODO: Remove */
   virtual void render_SDL(SDL_Texture *) = 0;
-
   virtual void render_VTK(FILE *) = 0;
 
+  virtual const D2Q9::LatticeNode *get_lattice() = 0;
   virtual void step() = 0;
 
   unsigned int get_width() const { return WIDTH; }
-
   unsigned int get_height() const { return HEIGHT; }
+
 };

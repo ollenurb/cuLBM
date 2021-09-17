@@ -7,8 +7,7 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
                                                                lattice_t(w, h) {
   Real e_dp_u;
   /* Initialize the initial configuration */
-  initial_config.u.x = VELOCITY;
-  initial_config.u.y = 0;
+  initial_config.u = VELOCITY;
   /* Assign each lattice with the equilibrium f */
   for (int i = 0; i < Q; i++) {
     e_dp_u = initial_config.u * e[i];
@@ -38,6 +37,8 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
 }
 
 CpuSimulation::~CpuSimulation() = default;
+
+
 
 void CpuSimulation::render_SDL(SDL_Texture *screen) {
   /* From Stack Overflow: void **pixels is a pointer-to-a-pointer; these are
@@ -87,17 +88,13 @@ void CpuSimulation::stream() {
    * (Schroeder - CpuSimulation-Boltzmann Fluid Dynamics)
    */
   for (int x = 0; x < WIDTH; x++) {
-    for(int i = 0; i < Q; i++) {
-      lattice_t(x, 0).f[i] = initial_config.f[i];
-      lattice_t(x, HEIGHT - 1).f[i] = initial_config.f[i];
-    }
+    lattice_t(x, 0) = initial_config;
+    lattice_t(x, HEIGHT - 1) = initial_config;
   }
 
   for (int y = 0; y < HEIGHT; y++) {
-    for(int i = 0; i < Q; i++) {
-      lattice_t(0, y).f[i] = initial_config.f[i];
-      lattice_t(WIDTH - 1, y).f[i] = initial_config.f[i];
-    }
+    lattice_t(0, y) = initial_config;
+    lattice_t(WIDTH - 1, y) = initial_config;
   }
 }
 
@@ -123,15 +120,14 @@ void CpuSimulation::collide() {
         }
 
         /* Compute average to get the actual value of flow_velocity */
-        /* "Cast" to 0 if the velocity is negative */
-        new_u.x = std::max(static_cast<Real>(0), new_u.x / total_density);
-        new_u.y = std::max(static_cast<Real>(0), new_u.y / total_density);
+        new_u.x = new_u.x / total_density;
+        new_u.y = new_u.y / total_density;
 
         /* Compute densities at thermal equilibrium */
         /* Equation (8) */
         for (int i = 0; i < Q; i++) {
           e_dp_u = new_u * e[i];
-          f_eq = total_density * W[i] * (1 + (3 * e_dp_u) + (static_cast<Real>(4.5) * (e_dp_u * e_dp_u)) - (static_cast<Real>(1.5) * new_u.mod_sqr()));
+          f_eq = (total_density * W[i]) * (1 + (3 * e_dp_u) + (static_cast<Real>(4.5) * (e_dp_u * e_dp_u)) - (static_cast<Real>(1.5) * new_u.mod_sqr()));
           cur_node.f[i] += OMEGA * (f_eq - cur_node.f[i]);
         }
         cur_node.u = new_u;
@@ -145,14 +141,14 @@ void CpuSimulation::bounce() {
     for (int y = 0; y < HEIGHT; y++) {
       LatticeNode &cur_node = lattice_t(x, y);
       if (cur_node.obstacle) {
-        lattice_t((x + 1), y).f[1] = cur_node.f[3];
-        lattice_t(x, (y + 1)).f[2] = cur_node.f[4];
-        lattice_t((x - 1), y).f[3] = cur_node.f[1];
-        lattice_t(x, (y - 1)).f[4] = cur_node.f[2];
-        lattice_t((x + 1), (y + 1)).f[5] = cur_node.f[7];
-        lattice_t((x - 1), (y + 1)).f[6] = cur_node.f[8];
-        lattice_t((x - 1), (y - 1)).f[7] = cur_node.f[5];
-        lattice_t((x + 1), (y - 1)).f[8] = cur_node.f[6];
+        lattice_t((x + 1), y).f[1] += cur_node.f[3];
+        lattice_t(x, (y + 1)).f[2] += cur_node.f[4];
+        lattice_t((x - 1), y).f[3] += cur_node.f[1];
+        lattice_t(x, (y - 1)).f[4] += cur_node.f[2];
+        lattice_t((x + 1), (y + 1)).f[5] += cur_node.f[7];
+        lattice_t((x - 1), (y + 1)).f[6] += cur_node.f[8];
+        lattice_t((x - 1), (y - 1)).f[7] += cur_node.f[5];
+        lattice_t((x + 1), (y - 1)).f[8] += cur_node.f[6];
 
         for (int i = 1; i < Q; i++) {
           cur_node.f[i] = 0;
@@ -168,3 +164,10 @@ void CpuSimulation::step() {
   bounce();
   lattice.swap(lattice_t);
 }
+
+// TODO: To remove
+const D2Q9::LatticeNode *CpuSimulation::get_lattice() {
+  return nullptr;
+}
+
+void CpuSimulation::render_VTK(FILE *) { }

@@ -4,6 +4,8 @@
 /* If the GPU compilation flag is enabled, then include the GPU-Specific version */
 #ifdef GPU_ENABLED
 #include "gpu/GpuSimulation.cuh"
+#include "common/engines/VtkEngine.hpp"
+
 #else
 #include "cpu/CpuSimulation.hpp"
 #endif

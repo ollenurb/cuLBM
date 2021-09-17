@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../Simulation.hpp"
+#include "../D2Q9.hpp"
 
 class VtkEngine {
 private:
@@ -14,10 +15,12 @@ private:
   Simulation &simulation;
 
   // VTK-related functions
-  void write_header(FILE *);
+  void write_header(FILE *) const;
+  void write_data(FILE *file, const D2Q9::LatticeNode *lattice) const;
 
 public:
   explicit VtkEngine(Simulation &, unsigned int);
   ~VtkEngine();
   void run();
+
 };

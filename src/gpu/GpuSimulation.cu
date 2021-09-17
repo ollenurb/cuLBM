@@ -42,16 +42,29 @@ __global__ void init_kernel(LatticeNode *lattice, LatticeNode *lattice_t) {
 
   /* TODO: TO REMOVE
    * Put a square at the center */
-  unsigned x_c = device::WIDTH/2;
-  unsigned y_c = device::HEIGHT/2;
 
-  if (x_i >= x_c - 10 && x_i < x_c + 10 && y_i >= y_c - 10 && y_i < y_c + 10) {
+  unsigned rel_x = device::WIDTH / 2 - x_i;
+  unsigned rel_y = device::HEIGHT / 2 - y_i;
+  double r = sqrt(static_cast<float>(rel_x * rel_x + rel_y * rel_y));
+
+  if(r < min(device::WIDTH, device::HEIGHT) * 0.2) {
     lattice[index].obstacle = lattice_t[index].obstacle = true;
-    for(int i = 0; i < Q; i++) {
+    lattice[index].u = lattice_t[index].u = {0, 0};
+    for (int i = 0; i < Q; i++) {
       lattice[index].f[i] = lattice_t[index].f[i] = 0;
-      lattice[index].u = lattice_t[index].u = {0, 0};
     }
   }
+
+//  unsigned x_c = device::WIDTH/2;
+//  unsigned y_c = device::HEIGHT/2;
+//
+//  if (x_i >= x_c - 10 && x_i < x_c + 10 && y_i >= y_c - 10 && y_i < y_c + 10) {
+//    lattice[index].obstacle = lattice_t[index].obstacle = true;
+//    lattice[index].u = lattice_t[index].u = {0, 0};
+//    for(int i = 0; i < Q; i++) {
+//      lattice[index].f[i] = lattice_t[index].f[i] = 0;
+//    }
+//  }
 }
 
 __device__ inline unsigned clamp(unsigned val, unsigned l, unsigned h) {
@@ -68,18 +81,23 @@ __device__ void stream(LatticeNode *lattice, LatticeNode *lattice_t) {
   unsigned index, index_t;
   index = index(x_i, y_i);
 
-  /* Stream away fluid on each lattice site */
-  #pragma unroll
-  for (int i = 0; i < Q; i++) {
-    x_t = clamp(x_i + device::e[i].x, 0, device::WIDTH - 1);
-    y_t = clamp(y_i + device::e[i].y, 0, device::HEIGHT - 1);
-    index_t = index(x_t, y_t);
-    lattice_t[index_t].f[i] = lattice[index].f[i];
-  }
 
-  /* Handle boundaries */
-  if (y_i == device::HEIGHT - 1 || y_i == 0 || x_i == device::WIDTH - 1 || x_i == 0) {
-    lattice_t[index] = device::INITIAL_CONFIG;
+  if (index < device::WIDTH * device::HEIGHT) {
+    /* Stream away fluid on each lattice site */
+    for (int i = 0; i < Q; i++) {
+      x_t = x_i + device::e[i].x;
+      y_t = y_i + device::e[i].y;
+      index_t = index(x_t, y_t);
+
+      if (x_t >= 0 && y_t >= 0 && x_t < device::WIDTH && y_t < device::HEIGHT) {
+        lattice_t[index_t].f[i] = lattice[index].f[i];
+      }
+    }
+
+    /* Handle boundaries */
+    if (y_i == device::HEIGHT - 1 || y_i == 0 || x_i == device::WIDTH - 1 || x_i == 0) {
+      lattice_t[index] = device::INITIAL_CONFIG;
+    }
   }
 }
 
@@ -100,7 +118,6 @@ __device__ void collide(LatticeNode *lattice) {
     total_density = 0;
     new_u.x = new_u.y = 0;
 
-    #pragma unroll
     for (int i = 0; i < Q; i++) {
       total_density += cur_node.f[i];
       /* Accumulate the f inside each component of flow_velocity */
@@ -109,14 +126,13 @@ __device__ void collide(LatticeNode *lattice) {
     }
     /* Compute average to get the actual value of flow_velocity */
     /* "Cast" to 0 if the velocity is negative */
-    new_u.x = max(0.0f, new_u.x / total_density);
-    new_u.y = max(0.0f, new_u.y / total_density);
+    new_u.x = (total_density > 0) ? (new_u.x / total_density) : 0;
+    new_u.y = (total_density > 0) ? (new_u.y / total_density) : 0;
 
     /* Compute densities at thermal equilibrium */
-    #pragma unroll
     for (int i = 0; i < Q; i++) {
       e_dp_u = new_u * device::e[i];
-      f_eq = total_density * device::W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * new_u.mod_sqr()));
+      f_eq = (total_density * device::W[i]) * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * new_u.mod_sqr()));
       cur_node.f[i] += D2Q9::OMEGA * (f_eq - cur_node.f[i]);
     }
     cur_node.u = new_u;
@@ -132,18 +148,18 @@ __device__ void bounce(LatticeNode *lattice_t) {
 
   /* Sadly, lots of threads are going to diverge here */
   if (cur_node.obstacle) {
-    lattice_t[index((x_i + 1), y_i)].f[1] = cur_node.f[3];
-    lattice_t[index(x_i, (y_i + 1))].f[2] = cur_node.f[4];
-    lattice_t[index((x_i - 1), y_i)].f[3] = cur_node.f[1];
-    lattice_t[index(x_i, (y_i - 1))].f[4] = cur_node.f[2];
-    lattice_t[index((x_i + 1), (y_i + 1))].f[5] = cur_node.f[7];
-    lattice_t[index((x_i - 1), (y_i + 1))].f[6] = cur_node.f[8];
-    lattice_t[index((x_i - 1), (y_i - 1))].f[7] = cur_node.f[5];
-    lattice_t[index((x_i + 1), (y_i - 1))].f[8] = cur_node.f[6];
+    if(cur_node.f[3] > 0) { lattice_t[index((x_i + 1), y_i)].f[1] = cur_node.f[3]; cur_node.f[3] = 0; }
+    if(cur_node.f[4] > 0) { lattice_t[index(x_i, (y_i + 1))].f[2] = cur_node.f[4]; cur_node.f[4] = 0;}
+    if(cur_node.f[1] > 0) { lattice_t[index((x_i - 1), y_i)].f[3] = cur_node.f[1]; cur_node.f[1] = 0;}
+    if(cur_node.f[2] > 0) { lattice_t[index(x_i, (y_i - 1))].f[4] = cur_node.f[2]; cur_node.f[2] = 0;}
+    if(cur_node.f[7] > 0) { lattice_t[index((x_i + 1), (y_i + 1))].f[5] = cur_node.f[7]; cur_node.f[7] = 0;}
+    if(cur_node.f[8] > 0) { lattice_t[index((x_i - 1), (y_i + 1))].f[6] = cur_node.f[8]; cur_node.f[8] = 0;}
+    if(cur_node.f[5] > 0) { lattice_t[index((x_i - 1), (y_i - 1))].f[7] = cur_node.f[5]; cur_node.f[5] = 0;}
+    if(cur_node.f[6] > 0) { lattice_t[index((x_i + 1), (y_i - 1))].f[8] = cur_node.f[6]; cur_node.f[6] = 0;}
 
-    for(int i = 1; i < Q; i++) {
-      cur_node.f[i] = 0;
-    }
+//    for(int i = 1; i < Q; i++) {
+//      cur_node.f[i] = 0;
+//    }
   }
 }
 
@@ -186,11 +202,8 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
   cudaMemcpyToSymbol(device::INITIAL_CONFIG, &tmp_init_conf,
                      sizeof(LatticeNode));
   /* Initialize */
-  printf("Block: %d, %d, %d, Grid: %d, %d, %d\n",
-         dim_block.x,
-         dim_block.y,
-         dim_block.z, dim_grid.x, dim_grid.y,
-         dim_grid.z);
+  printf("Block: %d, %d, %d, Grid: %d, %d, %d\n", dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y, dim_grid.z);
+
   init_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
   cudaDeviceSynchronize();
 }
@@ -202,7 +215,6 @@ GpuSimulation::~GpuSimulation() {
 }
 
 void GpuSimulation::step() {
-  cudaDeviceSynchronize();
   step_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
   cudaDeviceSynchronize();
   /* Swap pointers */
@@ -223,7 +235,7 @@ void GpuSimulation::render_SDL(SDL_Texture *screen) {
   for (int y = 0; y < HEIGHT; y++) {
     dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
     for (int x = 0; x < WIDTH; x++) {
-      b = std::min(host_lattice[x * HEIGHT + y].u.modulus() * 4, static_cast<Real>(1));
+      b = std::min(host_lattice[x * HEIGHT + y].u.modulus() * 3, static_cast<Real>(1));
       *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
     }
   }
@@ -233,3 +245,9 @@ void GpuSimulation::render_SDL(SDL_Texture *screen) {
 void GpuSimulation::render_VTK(FILE *) {
 
 }
+
+const D2Q9::LatticeNode *GpuSimulation::get_lattice() {
+  cudaMemcpy(host_lattice, device_lattice, sizeof(LatticeNode) * SIZE, cudaMemcpyDeviceToHost);
+  return host_lattice;
+}
+
