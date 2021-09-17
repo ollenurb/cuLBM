@@ -17,7 +17,7 @@ void SdlEngine::run() {
   while (running) {
     process_events();
     /* TODO: Change 10 with AFTER_NFRAMES */
-    if (n_frame == 100) {
+    if (n_frame == 50) {
       simulation.render_SDL(screen);
       SDL_RenderClear(renderer);
       SDL_RenderCopy(renderer, screen, nullptr, nullptr);

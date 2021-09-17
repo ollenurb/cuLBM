@@ -29,7 +29,24 @@ namespace device {
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Device-Specific Code and Kernels ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /* ============================================================================================================== */
 
-__device__ void compute_macroscopics() {
+__device__ void compute_macroscopics(const LatticeNode& node, Vector2D<Real> &new_u, Real &rho) {
+  // Prepare values
+  rho = 0;
+  new_u = {0, 0};
+
+  for (int i = 0; i < Q; i++) {
+    rho += node.f[i];
+    /* Accumulate the f inside each component of flow_velocity */
+    new_u.x += device::e[i].x * node.f[i]; // U_{x} component
+    new_u.y += device::e[i].y * node.f[i]; // U_{y} component
+  }
+  /* Compute average to get the actual value of flow_velocity */
+  /* "Cast" to 0 if the velocity is negative */
+  new_u.x = (rho > 0) ? (new_u.x / rho) : 0;
+  new_u.y = (rho > 0) ? (new_u.y / rho) : 0;
+}
+
+__device__ Real compute_equilibrium(const LatticeNode *lattice, Vector2D<Real> &new_u, Real rho) {
 
 }
 
@@ -54,17 +71,6 @@ __global__ void init_kernel(LatticeNode *lattice, LatticeNode *lattice_t) {
       lattice[index].f[i] = lattice_t[index].f[i] = 0;
     }
   }
-
-//  unsigned x_c = device::WIDTH/2;
-//  unsigned y_c = device::HEIGHT/2;
-//
-//  if (x_i >= x_c - 10 && x_i < x_c + 10 && y_i >= y_c - 10 && y_i < y_c + 10) {
-//    lattice[index].obstacle = lattice_t[index].obstacle = true;
-//    lattice[index].u = lattice_t[index].u = {0, 0};
-//    for(int i = 0; i < Q; i++) {
-//      lattice[index].f[i] = lattice_t[index].f[i] = 0;
-//    }
-//  }
 }
 
 __device__ inline unsigned clamp(unsigned val, unsigned l, unsigned h) {
@@ -72,7 +78,7 @@ __device__ inline unsigned clamp(unsigned val, unsigned l, unsigned h) {
 }
 
 /* Stream the fluid */
-__device__ void stream(LatticeNode *lattice, LatticeNode *lattice_t) {
+__global__ void stream(LatticeNode *lattice, LatticeNode *lattice_t) {
   unsigned int x_i = blockIdx.x * blockDim.x + threadIdx.x;
   unsigned int y_i = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -102,7 +108,7 @@ __device__ void stream(LatticeNode *lattice, LatticeNode *lattice_t) {
 }
 
 /* Collide the fluid according to LBM equilibrium density */
-__device__ void collide(LatticeNode *lattice) {
+__global__ void collide(LatticeNode *lattice) {
   unsigned x_i = blockIdx.x * blockDim.x + threadIdx.x;
   unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
   unsigned index = index(x_i, y_i);
@@ -140,7 +146,7 @@ __device__ void collide(LatticeNode *lattice) {
 }
 
 /* Bounce back fluid on obstacles */
-__device__ void bounce(LatticeNode *lattice_t) {
+__global__ void bounce(LatticeNode *lattice_t) {
   unsigned x_i = blockIdx.x * blockDim.x + threadIdx.x;
   unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
   unsigned index = index(x_i, y_i);
@@ -148,27 +154,19 @@ __device__ void bounce(LatticeNode *lattice_t) {
 
   /* Sadly, lots of threads are going to diverge here */
   if (cur_node.obstacle) {
-    if(cur_node.f[3] > 0) { lattice_t[index((x_i + 1), y_i)].f[1] = cur_node.f[3]; cur_node.f[3] = 0; }
-    if(cur_node.f[4] > 0) { lattice_t[index(x_i, (y_i + 1))].f[2] = cur_node.f[4]; cur_node.f[4] = 0;}
-    if(cur_node.f[1] > 0) { lattice_t[index((x_i - 1), y_i)].f[3] = cur_node.f[1]; cur_node.f[1] = 0;}
-    if(cur_node.f[2] > 0) { lattice_t[index(x_i, (y_i - 1))].f[4] = cur_node.f[2]; cur_node.f[2] = 0;}
-    if(cur_node.f[7] > 0) { lattice_t[index((x_i + 1), (y_i + 1))].f[5] = cur_node.f[7]; cur_node.f[7] = 0;}
-    if(cur_node.f[8] > 0) { lattice_t[index((x_i - 1), (y_i + 1))].f[6] = cur_node.f[8]; cur_node.f[8] = 0;}
-    if(cur_node.f[5] > 0) { lattice_t[index((x_i - 1), (y_i - 1))].f[7] = cur_node.f[5]; cur_node.f[5] = 0;}
-    if(cur_node.f[6] > 0) { lattice_t[index((x_i + 1), (y_i - 1))].f[8] = cur_node.f[6]; cur_node.f[6] = 0;}
+    lattice_t[index((x_i + 1), y_i)].f[1] = cur_node.f[3];
+    lattice_t[index(x_i, (y_i + 1))].f[2] = cur_node.f[4];
+    lattice_t[index((x_i - 1), y_i)].f[3] = cur_node.f[1];
+    lattice_t[index(x_i, (y_i - 1))].f[4] = cur_node.f[2];
+    lattice_t[index((x_i + 1), (y_i + 1))].f[5] = cur_node.f[7];
+    lattice_t[index((x_i - 1), (y_i + 1))].f[6] = cur_node.f[8];
+    lattice_t[index((x_i - 1), (y_i - 1))].f[7] = cur_node.f[5];
+    lattice_t[index((x_i + 1), (y_i - 1))].f[8] = cur_node.f[6];
 
-//    for(int i = 1; i < Q; i++) {
-//      cur_node.f[i] = 0;
-//    }
+    for(int i = 1; i < Q; i++) {
+      cur_node.f[i] = 0;
+    }
   }
-}
-
-/* Perform an LBM step */
-__global__ void step_kernel(LatticeNode *lattice, LatticeNode *lattice_t) {
-  collide(lattice);
-  __threadfence();
-  stream(lattice, lattice_t);
-  bounce(lattice_t);
 }
 
 /* ============================================================================================================== */
@@ -215,7 +213,11 @@ GpuSimulation::~GpuSimulation() {
 }
 
 void GpuSimulation::step() {
-  step_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
+  collide<<<dim_grid, dim_block>>>(device_lattice);
+  cudaDeviceSynchronize();
+  stream<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
+  cudaDeviceSynchronize();
+  bounce<<<dim_grid, dim_block>>>(device_lattice_t);
   cudaDeviceSynchronize();
   /* Swap pointers */
   std::swap(device_lattice_t, device_lattice);
