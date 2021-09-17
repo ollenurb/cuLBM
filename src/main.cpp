@@ -10,7 +10,7 @@
 #include "cpu/CpuSimulation.hpp"
 #endif
 
-#define WIDTH 640
+#define WIDTH 600
 #define HEIGHT 200
 
 void run_benchmark(unsigned long steps) {
@@ -60,4 +60,6 @@ int main(int argc, char **argv) {
 //  run_benchmark(10000);
   SdlEngine engine(lattice);
   engine.run();
+//  VtkEngine engine(lattice, 350);
+//  engine.run();
 }

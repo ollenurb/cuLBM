@@ -38,32 +38,6 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
 
 CpuSimulation::~CpuSimulation() = default;
 
-
-
-void CpuSimulation::render_SDL(SDL_Texture *screen) {
-  /* From Stack Overflow: void **pixels is a pointer-to-a-pointer; these are
-   * typically used (in this kind of context) where the data is of a pointer
-   * type but memory management is handled by the function you call.
-   */
-  void *pixels;
-  int pitch;
-  Uint32 *dest;
-  Real b;
-
-  if (SDL_LockTexture(screen, nullptr, &pixels, &pitch) < 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
-  }
-
-  for (int y = 0; y < HEIGHT; y++) {
-    dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
-    for (int x = 0; x < WIDTH; x++) {
-      b = std::min(lattice(x, y).u.modulus() * 4, static_cast<Real>(1));
-      *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
-    }
-  }
-  SDL_UnlockTexture(screen);
-}
-
 inline unsigned clamp(unsigned val, unsigned low, unsigned high) {
   return std::min(std::max(val, low), high);
 }
@@ -165,9 +139,6 @@ void CpuSimulation::step() {
   lattice.swap(lattice_t);
 }
 
-// TODO: To remove
 const D2Q9::LatticeNode *CpuSimulation::get_lattice() {
   return nullptr;
 }
-
-void CpuSimulation::render_VTK(FILE *) { }

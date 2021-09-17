@@ -14,6 +14,7 @@ private:
   SDL_Texture *screen;
 
   void process_events();
+  void render(SDL_Texture*);
 
 public:
   explicit SdlEngine(Simulation &);

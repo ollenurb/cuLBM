@@ -1,5 +1,6 @@
 #include <iostream>
 #include "SdlEngine.hpp"
+#include "../Utils.hpp"
 
 SdlEngine::SdlEngine(Simulation &r) : WIDTH(r.get_width()),
                                 HEIGHT(r.get_height()), simulation(r) {
@@ -18,7 +19,7 @@ void SdlEngine::run() {
     process_events();
     /* TODO: Change 10 with AFTER_NFRAMES */
     if (n_frame == 50) {
-      simulation.render_SDL(screen);
+      render(screen);
       SDL_RenderClear(renderer);
       SDL_RenderCopy(renderer, screen, nullptr, nullptr);
       SDL_RenderPresent(renderer);
@@ -47,4 +48,25 @@ void SdlEngine::process_events() {
         break;
     }
   }
+}
+
+void SdlEngine::render(SDL_Texture *) {
+  const D2Q9::LatticeNode *lattice = simulation.get_lattice();
+  void *pixels;
+  int pitch;
+  Uint32 *dest;
+  Real b;
+
+  if (SDL_LockTexture(screen, nullptr, &pixels, &pitch) < 0) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
+  }
+
+  for (int y = 0; y < HEIGHT; y++) {
+    dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
+    for (int x = 0; x < WIDTH; x++) {
+      b = std::min(lattice[x * HEIGHT + y].u.modulus() * 3, static_cast<Real>(1));
+      *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
+    }
+  }
+  SDL_UnlockTexture(screen);
 }

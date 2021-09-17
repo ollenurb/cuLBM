@@ -2,7 +2,6 @@
 // Created by matteo on 7/18/21.
 //
 #include "GpuSimulation.cuh"
-#include "../common/Utils.hpp"
 #include <algorithm>
 
 /* Translate a 2D index to a 1D index */
@@ -13,6 +12,8 @@
 #define BLOCK_DIM 10
 dim3 dim_block;
 dim3 dim_grid;
+
+__device__ void compute_macroscopics(const LatticeNode& node, Vector2D<Real> &new_u, Real &rho);
 
 /* ============================================================================================================== */
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Device Variables and Constants ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -29,27 +30,6 @@ namespace device {
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Device-Specific Code and Kernels ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /* ============================================================================================================== */
 
-__device__ void compute_macroscopics(const LatticeNode& node, Vector2D<Real> &new_u, Real &rho) {
-  // Prepare values
-  rho = 0;
-  new_u = {0, 0};
-
-  for (int i = 0; i < Q; i++) {
-    rho += node.f[i];
-    /* Accumulate the f inside each component of flow_velocity */
-    new_u.x += device::e[i].x * node.f[i]; // U_{x} component
-    new_u.y += device::e[i].y * node.f[i]; // U_{y} component
-  }
-  /* Compute average to get the actual value of flow_velocity */
-  /* "Cast" to 0 if the velocity is negative */
-  new_u.x = (rho > 0) ? (new_u.x / rho) : 0;
-  new_u.y = (rho > 0) ? (new_u.y / rho) : 0;
-}
-
-__device__ Real compute_equilibrium(const LatticeNode *lattice, Vector2D<Real> &new_u, Real rho) {
-
-}
-
 /* Initialize the device lattice using initial config's values */
 __global__ void init_kernel(LatticeNode *lattice, LatticeNode *lattice_t) {
   unsigned x_i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -57,24 +37,18 @@ __global__ void init_kernel(LatticeNode *lattice, LatticeNode *lattice_t) {
   unsigned index = index(x_i, y_i);
   lattice[index] = lattice_t[index] = device::INITIAL_CONFIG; // Initialize both lattices
 
-  /* TODO: TO REMOVE
-   * Put a square at the center */
-
+  /* TODO: TO REMOVE Put a circle at the center of the simulation */
   unsigned rel_x = device::WIDTH / 2 - x_i;
   unsigned rel_y = device::HEIGHT / 2 - y_i;
   double r = sqrt(static_cast<float>(rel_x * rel_x + rel_y * rel_y));
 
-  if(r < min(device::WIDTH, device::HEIGHT) * 0.2) {
+  if(r < min(device::WIDTH, device::HEIGHT) * 0.05) {
     lattice[index].obstacle = lattice_t[index].obstacle = true;
     lattice[index].u = lattice_t[index].u = {0, 0};
     for (int i = 0; i < Q; i++) {
       lattice[index].f[i] = lattice_t[index].f[i] = 0;
     }
   }
-}
-
-__device__ inline unsigned clamp(unsigned val, unsigned l, unsigned h) {
-  return min(max(val, l), h);
 }
 
 /* Stream the fluid */
@@ -120,20 +94,7 @@ __global__ void collide(LatticeNode *lattice) {
   LatticeNode &cur_node = lattice[index];
 
   if(!cur_node.obstacle) {
-    /* Compute the total f of lattice site at position (x, y) */
-    total_density = 0;
-    new_u.x = new_u.y = 0;
-
-    for (int i = 0; i < Q; i++) {
-      total_density += cur_node.f[i];
-      /* Accumulate the f inside each component of flow_velocity */
-      new_u.x += device::e[i].x * cur_node.f[i]; // U_{x} component
-      new_u.y += device::e[i].y * cur_node.f[i]; // U_{y} component
-    }
-    /* Compute average to get the actual value of flow_velocity */
-    /* "Cast" to 0 if the velocity is negative */
-    new_u.x = (total_density > 0) ? (new_u.x / total_density) : 0;
-    new_u.y = (total_density > 0) ? (new_u.y / total_density) : 0;
+    compute_macroscopics(cur_node, new_u, total_density);
 
     /* Compute densities at thermal equilibrium */
     for (int i = 0; i < Q; i++) {
@@ -143,6 +104,23 @@ __global__ void collide(LatticeNode *lattice) {
     }
     cur_node.u = new_u;
   }
+}
+
+__device__ void compute_macroscopics(const LatticeNode& node, Vector2D<Real> &new_u, Real &rho) {
+  // Prepare values
+  rho = 0;
+  new_u = {0, 0};
+
+  for (int i = 0; i < Q; i++) {
+    rho += node.f[i];
+    /* Accumulate the f inside each component of flow_velocity */
+    new_u.x += device::e[i].x * node.f[i]; // U_{x} component
+    new_u.y += device::e[i].y * node.f[i]; // U_{y} component
+  }
+  /* Compute average to get the actual value of flow_velocity */
+  /* "Cast" to 0 if the velocity is negative */
+  new_u.x = (rho > 0) ? (new_u.x / rho) : 0;
+  new_u.y = (rho > 0) ? (new_u.y / rho) : 0;
 }
 
 /* Bounce back fluid on obstacles */
@@ -187,7 +165,7 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
 
   host_lattice = new LatticeNode[SIZE];
 
-  /* Initialize the initial configuration */
+  /* Compute the initial configuration's parameters */
   Real e_dp_u;
   LatticeNode tmp_init_conf;
   tmp_init_conf.u = D2Q9::VELOCITY;
@@ -197,8 +175,7 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
     tmp_init_conf.f[i] = D2Q9::W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * tmp_init_conf.u.mod_sqr()));
   }
 
-  cudaMemcpyToSymbol(device::INITIAL_CONFIG, &tmp_init_conf,
-                     sizeof(LatticeNode));
+  cudaMemcpyToSymbol(device::INITIAL_CONFIG, &tmp_init_conf, sizeof(LatticeNode));
   /* Initialize */
   printf("Block: %d, %d, %d, Grid: %d, %d, %d\n", dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y, dim_grid.z);
 
@@ -214,42 +191,14 @@ GpuSimulation::~GpuSimulation() {
 
 void GpuSimulation::step() {
   collide<<<dim_grid, dim_block>>>(device_lattice);
-  cudaDeviceSynchronize();
   stream<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
-  cudaDeviceSynchronize();
   bounce<<<dim_grid, dim_block>>>(device_lattice_t);
   cudaDeviceSynchronize();
   /* Swap pointers */
   std::swap(device_lattice_t, device_lattice);
 }
 
-void GpuSimulation::render_SDL(SDL_Texture *screen) {
-  cudaMemcpy(host_lattice, device_lattice, sizeof(LatticeNode) * SIZE, cudaMemcpyDeviceToHost);
-  void *pixels;
-  int pitch;
-  Uint32 *dest;
-  Real b;
-
-  if (SDL_LockTexture(screen, nullptr, &pixels, &pitch) < 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
-  }
-
-  for (int y = 0; y < HEIGHT; y++) {
-    dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
-    for (int x = 0; x < WIDTH; x++) {
-      b = std::min(host_lattice[x * HEIGHT + y].u.modulus() * 3, static_cast<Real>(1));
-      *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
-    }
-  }
-  SDL_UnlockTexture(screen);
-}
-
-void GpuSimulation::render_VTK(FILE *) {
-
-}
-
 const D2Q9::LatticeNode *GpuSimulation::get_lattice() {
   cudaMemcpy(host_lattice, device_lattice, sizeof(LatticeNode) * SIZE, cudaMemcpyDeviceToHost);
   return host_lattice;
 }
-

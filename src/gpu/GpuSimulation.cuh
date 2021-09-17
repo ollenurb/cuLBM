@@ -25,13 +25,10 @@ public:
 
   ~GpuSimulation();
 
-  /* Render the host_lattice state on the screen */
-  void render_SDL(SDL_Texture *) override;
-  void render_VTK(FILE *) override;
-
   const D2Q9::LatticeNode *get_lattice() override;
 
   /* Perform a simulation step: f(t) -> f(t + dt) */
   void step() override;
+
 };
 
