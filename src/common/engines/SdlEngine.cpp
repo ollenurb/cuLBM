@@ -2,6 +2,8 @@
 #include "SdlEngine.hpp"
 #include "../Utils.hpp"
 
+#define UPDATE_STEPS 50
+
 SdlEngine::SdlEngine(Simulation &r) : WIDTH(r.get_width()),
                                 HEIGHT(r.get_height()), simulation(r) {
   running = false;
@@ -18,7 +20,7 @@ void SdlEngine::run() {
   while (running) {
     process_events();
     /* TODO: Change 10 with AFTER_NFRAMES */
-    if (n_frame == 50) {
+    if (n_frame == UPDATE_STEPS) {
       render(screen);
       SDL_RenderClear(renderer);
       SDL_RenderCopy(renderer, screen, nullptr, nullptr);
