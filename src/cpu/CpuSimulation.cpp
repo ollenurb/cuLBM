@@ -1,14 +1,16 @@
 #include "CpuSimulation.hpp"
-#include "../common/Utils.hpp"
 #include <algorithm>
 
-CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
-                                                               lattice(w, h),
-                                                               lattice_t(w, h) {
+#define index(x, y) x * HEIGHT + y
+
+CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) {
+  // initialize lattices
+  lattice = new LatticeNode[WIDTH * HEIGHT];
+  lattice_t = new LatticeNode[WIDTH * HEIGHT];
+
   Real e_dp_u;
   /* Initialize the initial configuration */
-  initial_config.u.x = VELOCITY;
-  initial_config.u.y = 0;
+  initial_config.u = VELOCITY;
   /* Assign each lattice with the equilibrium f */
   for (int i = 0; i < Q; i++) {
     e_dp_u = initial_config.u * e[i];
@@ -19,17 +21,18 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
       /* Initialize flow velocity */
-      lattice(x, y) = lattice_t(x, y) = initial_config;
+      unsigned index = index(x, y);
+      lattice[index] = lattice_t[index] = initial_config;
 
       /* TODO: To remove, its just to put a circle in the center */
       unsigned rel_x = WIDTH / 2 - x;
       unsigned rel_y = HEIGHT / 2 - y;
       double r = sqrt(rel_x * rel_x + rel_y * rel_y);
       if(r < std::min(WIDTH, HEIGHT) * 0.2) {
-        lattice(x, y).obstacle = lattice_t(x, y).obstacle = true;
+        lattice[index].obstacle = lattice_t[index].obstacle = true;
         for (int i = 0; i < Q; i++) {
-          lattice(x, y).f[i] = lattice_t(x, y).f[i] = 0;
-          lattice(x, y).u = lattice_t(x, y).u = {0, 0};
+          lattice[index].f[i] = lattice_t[index].f[i] = 0;
+          lattice[index].u = lattice_t[index].u = {0, 0};
         }
       }
     }
@@ -38,30 +41,6 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h),
 }
 
 CpuSimulation::~CpuSimulation() = default;
-
-void CpuSimulation::render(SDL_Texture *screen) {
-  /* From Stack Overflow: void **pixels is a pointer-to-a-pointer; these are
-   * typically used (in this kind of context) where the data is of a pointer
-   * type but memory management is handled by the function you call.
-   */
-  void *pixels;
-  int pitch;
-  Uint32 *dest;
-  Real b;
-
-  if (SDL_LockTexture(screen, nullptr, &pixels, &pitch) < 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
-  }
-
-  for (int y = 0; y < HEIGHT; y++) {
-    dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
-    for (int x = 0; x < WIDTH; x++) {
-      b = std::min(lattice(x, y).u.modulus() * 4, static_cast<Real>(1));
-      *(dest + x) = utils::HSBtoRGB(0.5, 1, b);
-    }
-  }
-  SDL_UnlockTexture(screen);
-}
 
 inline unsigned clamp(unsigned val, unsigned low, unsigned high) {
   return std::min(std::max(val, low), high);
@@ -76,7 +55,7 @@ void CpuSimulation::stream() {
       for (int i = 0; i < Q; i++) {
         x_index = clamp(x + e[i].x, 0, WIDTH - 1);
         y_index = clamp(y + e[i].y, 0, HEIGHT - 1);
-        lattice_t(x_index, y_index).f[i] = lattice(x, y).f[i];
+        lattice_t[index(x_index, y_index)].f[i] = lattice[index(x, y)].f[i];
       }
     }
   }
@@ -87,17 +66,13 @@ void CpuSimulation::stream() {
    * (Schroeder - CpuSimulation-Boltzmann Fluid Dynamics)
    */
   for (int x = 0; x < WIDTH; x++) {
-    for(int i = 0; i < Q; i++) {
-      lattice_t(x, 0).f[i] = initial_config.f[i];
-      lattice_t(x, HEIGHT - 1).f[i] = initial_config.f[i];
-    }
+    lattice_t[index(x, 0)] = initial_config;
+    lattice_t[index(x, (HEIGHT-1))] = initial_config;
   }
 
   for (int y = 0; y < HEIGHT; y++) {
-    for(int i = 0; i < Q; i++) {
-      lattice_t(0, y).f[i] = initial_config.f[i];
-      lattice_t(WIDTH - 1, y).f[i] = initial_config.f[i];
-    }
+    lattice_t[index(0, y)] = initial_config;
+    lattice_t[index((WIDTH-1), y)] = initial_config;
   }
 }
 
@@ -109,7 +84,7 @@ void CpuSimulation::collide() {
 
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
-      LatticeNode &cur_node = lattice(x, y);
+      LatticeNode &cur_node = lattice[index(x, y)];
       if(!cur_node.obstacle) {
         /* Compute the total f of lattice site at position (x, y) */
         total_density = 0;
@@ -123,15 +98,14 @@ void CpuSimulation::collide() {
         }
 
         /* Compute average to get the actual value of flow_velocity */
-        /* "Cast" to 0 if the velocity is negative */
-        new_u.x = std::max(static_cast<Real>(0), new_u.x / total_density);
-        new_u.y = std::max(static_cast<Real>(0), new_u.y / total_density);
+        new_u.x = (total_density > 0) ? (new_u.x / total_density) : 0;
+        new_u.y = (total_density > 0) ? (new_u.y / total_density) : 0;
 
         /* Compute densities at thermal equilibrium */
         /* Equation (8) */
         for (int i = 0; i < Q; i++) {
           e_dp_u = new_u * e[i];
-          f_eq = total_density * W[i] * (1 + (3 * e_dp_u) + (static_cast<Real>(4.5) * (e_dp_u * e_dp_u)) - (static_cast<Real>(1.5) * new_u.mod_sqr()));
+          f_eq = (total_density * W[i]) * (1 + (3 * e_dp_u) + (static_cast<Real>(4.5) * (e_dp_u * e_dp_u)) - (static_cast<Real>(1.5) * new_u.mod_sqr()));
           cur_node.f[i] += OMEGA * (f_eq - cur_node.f[i]);
         }
         cur_node.u = new_u;
@@ -143,16 +117,16 @@ void CpuSimulation::collide() {
 void CpuSimulation::bounce() {
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
-      LatticeNode &cur_node = lattice_t(x, y);
+      LatticeNode &cur_node = lattice_t[index(x, y)];
       if (cur_node.obstacle) {
-        lattice_t((x + 1), y).f[1] = cur_node.f[3];
-        lattice_t(x, (y + 1)).f[2] = cur_node.f[4];
-        lattice_t((x - 1), y).f[3] = cur_node.f[1];
-        lattice_t(x, (y - 1)).f[4] = cur_node.f[2];
-        lattice_t((x + 1), (y + 1)).f[5] = cur_node.f[7];
-        lattice_t((x - 1), (y + 1)).f[6] = cur_node.f[8];
-        lattice_t((x - 1), (y - 1)).f[7] = cur_node.f[5];
-        lattice_t((x + 1), (y - 1)).f[8] = cur_node.f[6];
+        lattice_t[index((x+1), y    )].f[1] = cur_node.f[3];
+        lattice_t[index(x    , (y+1))].f[2] = cur_node.f[4];
+        lattice_t[index((x-1),  y   )].f[3] = cur_node.f[1];
+        lattice_t[index(x    , (y-1))].f[4] = cur_node.f[2];
+        lattice_t[index((x+1), (y+1))].f[5] = cur_node.f[7];
+        lattice_t[index((x-1), (y+1))].f[6] = cur_node.f[8];
+        lattice_t[index((x-1), (y-1))].f[7] = cur_node.f[5];
+        lattice_t[index((x+1), (y-1))].f[8] = cur_node.f[6];
 
         for (int i = 1; i < Q; i++) {
           cur_node.f[i] = 0;
@@ -166,5 +140,9 @@ void CpuSimulation::step() {
   collide();
   stream();
   bounce();
-  lattice.swap(lattice_t);
+  std::swap(lattice_t, lattice);
+}
+
+const D2Q9::LatticeNode *CpuSimulation::get_lattice() {
+  return lattice;
 }

@@ -1,14 +1,16 @@
-#include "common/Engine.hpp"
+#include "common/engines/SdlEngine.hpp"
 #include <chrono>
 #include <iostream>
 /* If the GPU compilation flag is enabled, then include the GPU-Specific version */
 #ifdef GPU_ENABLED
 #include "gpu/GpuSimulation.cuh"
+#include "common/engines/VtkEngine.hpp"
+
 #else
 #include "cpu/CpuSimulation.hpp"
 #endif
 
-#define WIDTH 640
+#define WIDTH 600
 #define HEIGHT 200
 
 void run_benchmark(unsigned long steps) {
@@ -56,6 +58,8 @@ int main(int argc, char **argv) {
   CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
 //  run_benchmark(10000);
-  Engine engine(lattice);
+  SdlEngine engine(lattice);
   engine.run();
+//  VtkEngine engine(lattice, 350);
+//  engine.run();
 }
