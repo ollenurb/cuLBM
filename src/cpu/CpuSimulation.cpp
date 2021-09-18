@@ -37,7 +37,6 @@ CpuSimulation::CpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
       }
     }
   }
-
 }
 
 CpuSimulation::~CpuSimulation() = default;
