@@ -57,9 +57,5 @@ int main(int argc, char **argv) {
 #else
   CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
-//  run_benchmark(10000);
-  SdlEngine engine(lattice);
-  engine.run();
-//  VtkEngine engine(lattice, 350);
-//  engine.run();
+
 }
