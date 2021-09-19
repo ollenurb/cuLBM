@@ -8,22 +8,12 @@ set(EXECUTABLE_NAME ${PROJECT_NAME})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/obj")
 
-option(GPU "Enable GPU acceleration" OFF)
-set(GPU ON)
 
 # +=============================================+
 # +====+ Setup Headers, Sources and macros +====+
 # +=============================================+
-if (GPU)
-    add_compile_definitions(GPU_ENABLED)
-    file(GLOB HEADERS src/common/*.hpp  src/common/engines/*.hpp src/common/*.cuh src/gpu/*.cuh)
-    file(GLOB SOURCES src/common/*.cpp  src/common/engines/*.cpp src/gpu/*.cu)
-    message(STATUS "Compiling with Hard ware acceleration...")
-else ()
-    file(GLOB HEADERS src/common/*.hpp src/common/engines/*.hpp src/cpu/*.hpp)
-    file(GLOB SOURCES src/common/*.cpp src/common/engines/*.cpp src/cpu/*.cpp)
-    message(STATUS "Compiling without Hardware acceleration...")
-endif ()
+file(GLOB HEADERS src/common/*.hpp  src/common/engines/*.hpp src/common/*.cuh src/gpu/*.cuh src/cpu/*.hpp)
+file(GLOB SOURCES src/common/*.cpp  src/common/engines/*.cpp src/gpu/*.cu src/cpu/*.cpp)
 
 # +=============================================+
 # +========+ Setup libraries headers +==========+

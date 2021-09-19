@@ -1,14 +1,10 @@
-#include "common/engines/SdlEngine.hpp"
 #include <chrono>
 #include <iostream>
-/* If the GPU compilation flag is enabled, then include the GPU-Specific version */
-#ifdef GPU_ENABLED
+#include "../lib/CLI11.hpp"
 #include "gpu/GpuSimulation.cuh"
+#include "common/engines/SdlEngine.hpp"
 #include "common/engines/VtkEngine.hpp"
-
-#else
 #include "cpu/CpuSimulation.hpp"
-#endif
 
 #define WIDTH 600
 #define HEIGHT 200
@@ -18,23 +14,8 @@ void run_benchmark(unsigned long steps) {
   using std::chrono::duration_cast;
   using std::chrono::duration;
   using std::chrono::milliseconds;
-#ifdef GPU_ENABLED
-  std::cout
-          << "+=======================+ Benchmarking GPU accelerated version +========================+ "
-          << std::endl;
-#else
-  std::cout << "+==============================+ Benchmarking CPU version +=============================+ " << std::endl;
-#endif
-  std::cout << "Simulating " << steps << " time steps of a "
-            << WIDTH << "x" << HEIGHT << " host_lattice"
-            << std::endl;
 
-
-#ifdef GPU_ENABLED
   GpuSimulation lattice(WIDTH, HEIGHT);
-#else
-  CpuSimulation lattice(WIDTH, HEIGHT);
-#endif
 
   auto t0 = high_resolution_clock::now();
   while (steps > 0) {
@@ -51,13 +32,44 @@ void run_benchmark(unsigned long steps) {
 }
 
 int main(int argc, char **argv) {
+  CLI::App app("Lattice Boltzmann Method CFD Solver");
+  enum ProgramMode { BENCHMARK, REALTIME, PARAVIEW };
+  static const char *mode_str[] = {"benchmark", "realtime simulation", "ParaView simulation"};
 
-#ifdef GPU_ENABLED
-  GpuSimulation lattice(WIDTH, HEIGHT);
-#else
-  CpuSimulation lattice(WIDTH, HEIGHT);
-#endif
-  SdlEngine engine(lattice);
-  engine.run();
+  bool gpu_support = false;
+  enum ProgramMode mode = REALTIME;
+  std::pair<unsigned, unsigned> dim(100, 100);
+  app.add_option("--gpu", gpu_support, "Whether to use GPU acceleration or not (Default false)");
+  app.add_option("--mode", mode, "Run the program on a given mode. Available values are:\n\t1: Benchmark\n\t2: Realtime simulation (Default)\n\t3: ParaView simulation");
+  app.add_option("--dim", dim, "Dimensions of the simulation expressed as WIDTH x HEIGHT (default 100 100)");
+
+  CLI11_PARSE(app, argc, argv)
+  std::cout << "Running a " << mode_str[mode-1] << " on a " << dim.first << "x" << dim.second << " grid " << (gpu_support ? "with" : "without") << " GPU acceleration enabled" << std::endl;
+
+  Simulation *simulation;
+  if(gpu_support) {
+    simulation = new GpuSimulation(dim.first, dim.second);
+  } else {
+    simulation = new CpuSimulation(dim.first, dim.second);
+  }
+
+  switch (mode) {
+    case BENCHMARK: {
+      break;
+    }
+
+    case REALTIME: {
+      SdlEngine engine(*simulation);
+      engine.run();
+      break;
+    }
+
+    case PARAVIEW: {
+      // TODO: Change steps
+      VtkEngine engine(*simulation, 100);
+      engine.run();
+      break;
+    }
+  }
 
 }
