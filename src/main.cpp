@@ -57,5 +57,7 @@ int main(int argc, char **argv) {
 #else
   CpuSimulation lattice(WIDTH, HEIGHT);
 #endif
+  SdlEngine engine(lattice);
+  engine.run();
 
 }
