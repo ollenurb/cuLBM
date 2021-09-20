@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   app.add_option("--gpu", gpu_support, "Whether to use GPU acceleration or not (Default false)");
   app.add_option("--mode", mode, "Run the program on a given mode. Available values are:\n\t1: Benchmark\n\t2: Realtime simulation (Default)\n\t3: ParaView simulation");
   app.add_option("--dim", dim, "Dimensions of the simulation expressed as WIDTH x HEIGHT (default 100 100)");
-  app.add_option("--step", steps, "Number of timesteps to be performed in the simulation (default 10000)");
+  app.add_option("--step", steps, "Number of time steps to be performed in the simulation (default 10000)");
 
   CLI11_PARSE(app, argc, argv)
   std::cout << "Running a " << mode_str[mode-1] << " on a " << dim.first << "x" << dim.second << " grid " << (gpu_support ? "with" : "without") << " GPU acceleration enabled" << std::endl;
