@@ -8,6 +8,7 @@ documentclass: article
 classoption: twocolumn
 papersize: A4
 lang: it-IT
+numbersections: true
 hyperrefoptions:
     - linktoc=all
 bibliography: Bibliography.bib
@@ -17,6 +18,8 @@ csl: /home/matteo/.pandoc/csls/ieee.csl
 fontsize: 11pt
 geometry: "left=2cm,right=2cm,top=2cm,bottom=2cm"
 header-includes: |
+    \usepackage{algorithm} 
+    \usepackage{algpseudocode} 
     \setlength{\parskip}{0.5em}
     \setlength{\columnsep}{18pt}
     \makeatletter
@@ -43,24 +46,33 @@ header-includes: |
 ---
 
 # Introduzione
-Il progetto di laboratorio finale di cui si discutera' in questa relazione, consiste nello sviluppo
-di un simulatore (o *solver*) di fluidi in due dimensioni. Piu' in particolare, verranno discusse
-due implementazioni del solver: una sequenziale (per cui non vengono sfruttate tecniche e supporti
-hardware alla parallelizzazione) e una parallela su GPU (implementata utilizzando CUDA).
+La fluidodinamica computazionale (CFD) e' un campo della meccanica dei fluidi che impiega metodi
+numerici e computazionali, per analizzare e risolvere problemi che riguardano il flusso di fluidi. 
+In questa relazione di laboratorio si discutera' dello sviluppo di un simulatore (o *solver*) di
+fluidi in due dimensioni. In particolare, un solver e' un software che utilizza le tecniche della
+fluidodinamica computazionale, per simulare il flusso di fluidi (liquidi o gas) e la loro interazione
+con le superfici. Verranno discusse due implementazioni del solver: un sequenziale (per cui non
+vengono sfruttate tecniche e supporti hardware alla parallelizzazione) e una parallela su GPU
+(implementata utilizzando CUDA).
+Nella sezione 1 verra' discusso brevemente il metodo che verra' utilizzato per simulare i fluidi,
+mentre nella sezione 2 verranno discussi i dettagli implementativi (strutture dati e algoritmi)
+della versione sequenziale del solver. Nella sezione 3 si esaminera' l'implementazione parallela
+sulla piattaforma CUDA, per cui verranno proposti anche alcuni miglioramenti possibili per eventuali
+sviluppi futuri. Infine, nella sezione 4 verranno messe a confronto le due versioni esaminando i
+diversi benchmarks eseguiti.
 
-Per poter simulare efficientemente i
-fluidi e sfruttare al meglio architetture multicore massive (quali acceleratori grafici), e' stato
-deciso di basare il solver sul cosiddetto "*metodo reticolare di Boltzmann*"
-
-# Sezione 1
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean laoreet maximus lectus eu aliquet.
-Phasellus cursus eu magna at bibendum. Suspendisse congue sem lorem, non semper tellus fringilla eu.
-Morbi in blandit turpis. Suspendisse sed purus in nunc pulvinar viverra. Integer scelerisque
-vulputate massa eu congue. Donec semper blandit justo, in tincidunt ante faucibus sit amet. Quisque
-nec feugiat erat. Morbi feugiat, elit ullamcorper lacinia vehicula, quam tellus imperdiet dui, eget
-efficitur augue sem at nisi. Fusce vulputate velit eu ligula consectetur, sed bibendum lacus
-feugiat. Ut ut erat dapibus, [@CABI] dapibus est ut, aliquet magna. Nullam at eros nibh. Phasellus posuere
-volutpat ex sed pretium.
+# Il Metodo Reticolare di Boltzmann 
+Quando di parla di fluidodinamica computazionale e' impossibile non parlare anche delle equazioni di
+Navier Stokes. Esse sono un insieme di equazioni parziali differenziali che descrivono il moto dei
+fluidi nel tempo. Tipicamente il compito dei solver e' quello di ottenere un'approssimazione delle
+soluzioni di queste equazioni impiegando metodi numerici appositi. In linea di principio generale,
+dato uno stato del fluido al tempo $t$, viene calcolato lo stato (come approssimazione) al tempo
+$t+\Delta t$, dove $\Delta t$ e' il passo.
+Nella fluidodinamica computazionale esistono diversi metodi utilizzati per il calcolo delle
+soluzioni approssimate. Il metodo alla base del solver che e' stato scelto e' il cosiddetto metodo
+reticolare di Boltzmann. La motivazione di tale scelta e' che tale metodo e' particolarmente adatto
+a sfruttare architetture multicore massive, senza cambiare radicalmente l'implementazione
+sequenziale. 
 
 Vestibulum eget neque ac magna sagittis rhoncus. Donec in tincidunt tortor. Duis at mauris aliquet,
 dignissim nisi id, tincidunt augue. Nunc varius dui ac luctus varius. Praesent et magna egestas
@@ -85,6 +97,19 @@ consequat mauris ac auctor. Pellentesque habitant morbi tristique senectus et ne
 fames ac turpis egestas. Quisque tincidunt nibh in erat lobortis, at dapibus urna imperdiet. Fusce
 vitae diam ac nisi auctor egestas sed vitae lectus. Ut consequat massa vel arcu ullamcorper
 pellentesque. Nulla rhoncus facilisis purus, a lobortis urna volutpat vitae.
+
+\begin{algorithm}
+	\caption{LBM - Compute time step} 
+	\begin{algorithmic}
+		\For {$x=0$ to $width$}
+		  \For {$y=0$ to $height$}
+				\State Compute collision step on $l$
+        \State Compute streaming step $l \rightarrow l_t$
+        \State Swap $l$ with $l_t$
+			\EndFor
+		\EndFor
+	\end{algorithmic} 
+\end{algorithm}
 
 Aenean ullamcorper massa in nisi mollis, nec vehicula nibh faucibus. Suspendisse sed interdum nisl.
 Pellentesque suscipit metus at congue vestibulum. Cras suscipit nibh non dignissim elementum.

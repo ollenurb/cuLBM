@@ -9,8 +9,6 @@
 #define WEIGHTS {4.0/9, 1.0/9, 1.0/9, 1.0/9, 1.0/9, 1.0/36, 1.0/36, 1.0/36, 1.0/36}
 #define E {{0, 0}, {1, 0}, {0, 1}, {-1, 0}, {0,-1}, {1, 1}, {-1, 1}, {-1, -1}, {1, -1}}
 
-// E: 1, NE: 5, SE: 8
-
 namespace D2Q9 {
 /* A lattice Node where:
  * f[i] = lattice f
@@ -32,7 +30,6 @@ namespace D2Q9 {
   } LatticeNode;
 #endif
 
-//  constexpr static const Real VELOCITY = 0.070;
   constexpr static const Vector2D<Real> VELOCITY = {0.070, 0.0};
   constexpr static const Real VISCOSITY = 0.020;
   constexpr static const Real OMEGA = 1 / (3 * VISCOSITY + 0.5);
