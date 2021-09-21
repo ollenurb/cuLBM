@@ -1,5 +1,5 @@
 ---
-title: "Parallelizzazione del Metodo Reticolare di Boltzmann per la Simulazione di Fluidi"
+title: "Parallelizzazione del Metodo Reticolare di Boltzmann per la Simulazione di Fluidi in due dimensioni"
 author:
 - Matteo Brunello 
 - Matr. 858867
@@ -69,27 +69,27 @@ soluzioni di queste equazioni per mezzo di metodi numerici appositi.
 In linea di principio generale, il compito di un solver e' il seguente: dato lo stato di un fluido
 descritto in termini della sua densita' macroscopica $\rho$ e della sua velocita' macroscopica
 $\vec{u}$, calcola per lo stato risultante al tempo $t+\Delta t$, dove $\Delta t$ e' il passo.
-Nella fluidodinamica computazionale esistono diversi metodi e tecniche impiegate per il calcolo di
-queste soluzioni approssimate, ma proprio per la natura delle equazioni parziali differenziali,
-molti di questi risultano molto dispendiosi in termini di risorse computazionali. Il metodo alla
-base del solver che e' stato scelto, invece, rappresenta un'approccio alternativo, basato sugli
-automi cellulari anziche' sulla soluzione delle equazioni di Navier Stokes. La motivazione
-principale della scelta e' che per natura risulta particolarmente indicato per sfruttare
-architetture multicore massive senza la necessita' di dover modificare radicalmente
+Nella fluidodinamica computazionale esistono diversi metodi e tecniche che possono essere impiegate
+per ottenere un'approssimazione di queste soluzioni, ma proprio per la natura delle equazioni
+parziali differenziali, molti di questi risultano molto dispendiosi in termini di risorse
+computazionali. Il metodo alla base del solver che e' stato scelto, invece, rappresenta un'approccio
+alternativo, basato sugli automi cellulari anziche' sulla soluzione delle equazioni di Navier
+Stokes. La motivazione principale della scelta e' che per natura risulta particolarmente indicato
+per sfruttare architetture multicore massive senza la necessita' di dover modificare radicalmente
 l'implementazione sequenziale.
-Come il nome suggerisce, questo metodo fu derivato originariamente dalla teoria cinetica dei gas di
-Ludwig Boltzmann, secondo la quale i fluidi/gas possono essere immaginati come un grande numero di
+Come il nome suggerisce, questo metodo fu derivato originariamente dalla teoria cinetica dei gas di Ludwig Boltzmann, secondo la quale i fluidi/gas possono essere immaginati come un grande numero di
 particelle che si muovono secondo moti apparentemente casuali. L'idea fondamentale del metodo
 reticolare di Boltzmann e' quella di discretizzare lo spazio nel quale queste particelle si muovono,
 confinandole ai nodi di un *reticolo*.
-Generalmente, in uno spazio a due dimensioni le possibili direzioni di una particella sono 9
-(inclusa la possibilita' di rimanere stazionaria). Tale modello e' chiamato anche comunemente
-modello `D2Q9`\footnote{Naturalmente esistono altri modelli, quali il D3Q19}.
+In generale, in uno spazio a due dimensioni, le particelle all'interno di un nodo sono limitate a
+muoversi in 9 possibili direzioni (inclusa la possibilita' di rimanere stazionarie). Questo modello
+descritto a 2 dimensioni e a 9 direzioni possibili e' anche chiamato comunemente modello
+`D2Q9`\footnote{Naturalmente esistono altri modelli, quali il D3Q19}.
 
 ![Nodo del reticolo del modello D2Q9\label{imgNode}](img/d2q9_node.png){ width=20% }
 
-E' possibile rappresentare le possibili direzioni mediante 9 vettori a due componenti ($x$ e $y$)
-$\vec{e_i}$, definiti come:
+Le possibili direzioni vengono rappresentate matematicamente mediante 9 vettori $\vec{e_i},
+i=0,\dots,8$ a due componenti ($x$, $y$), definiti come:
 $$
 \vec{e_i} = 
 \begin{cases}
@@ -98,9 +98,48 @@ $$
     (1, 1), (-1, 1), (-1, -1), (1, -1)&i = 5,.. 8\\
 \end{cases}
 $$
-Per modellare la presenza di fluido in ognuna delle direzioni, si definisce una funzione di
-distribuzione di probabilita' $f_i(\vec{x}, \vec{e_i}, t)$, che indica la densita' di fluido alla
-posizione $\vec{x}$, con direzione $\vec{e_i}$, al tempo $t$.
+Il fluido viene modellato poi mediante una funzione di densita' di probabilita' $f(\vec{x},
+\vec{e_i}, t)$, che indica la densita' di fluido alla posizione $\vec{x}$, con direzione
+$\vec{e_i}$, al tempo $t$ (tali densita' sono indicate anche come *densita' microscopiche*).
+Come detto precedentemente, quello che si vuole ottenere e' lo stato del fluido al tempo $t+\Delta
+t$, cioe' dato il valore di $f(\vec{x}, \vec{e_i}, t)$, trovare il valore di $f(\vec{x}, \vec{e_i},
+t+\Delta t)$.  
+Nel metodo reticolare di Boltzmann il calcolo del nuovo stato e' eseguito per mezzo di tre passi
+intermedi:
+
+1. Propagazione: le particelle di fluido vengono propagate a seconda della loro direzione ai nodi
+   adiacenti
+2. Collisione: le particelle di fluido collidono tra loro, di fatto rimodulando la densita'
+   all'interno dei singoli nodi
+3. Rimbalzo: le particelle di fluido rimbalzano alla collisione con eventuali superfici solide
+
+## Propagazione
+Il passo di propagazione consiste essenzialmente nel trasferire la densita' di fluido presente alla
+direzione $\vec{e_i}$, di un nodo del reticolo alla posizione $\vec{x}$, alla direzione $\vec{e_i}$
+al nodo adiacente corrispondente alla posizione $\vec{x} + \vec{e_i}$. Dal punto di vista del
+metodo, il passo e' riassumibile con la seguente equazione:
+$$
+f(\vec{x} + \vec{e_i}, \vec{e_i}, t + \Delta t) = f(\vec{x}, \vec{e_i}, t)
+$$
+
+Il passo e' illustrato anche in Figura \ref{figStreaming}, in cui le frecce piu' spesse indicano il
+[fluido](fluido) presente inizialmente nei siti del nodo centrale e la freccia vuota indica il passo di
+propagazione. 
+
+![Illustrazione del passo di propagazione\label{figStreaming}](img/streaming.png)
+
+## Collisione
+Il passo di collisione e' leggermente piu' complicato rispetto al passo di propagazione, poiche'
+richiede il calcolo di diverse quantita'. 
+Dato un istante di tempo $t$ e una cella del lattice individuata della posizione $\vec{x}$, tramite
+$f$ e' poi possibile calcolare le quantita' macroscopiche citate in precedenza, secondo le relazioni
+seguenti
+$$
+\begin{aligned}
+\rho(\vec{x}, t) &= \sum^{8}_{i=0} f(\vec{x}, \vec{e_i}, t) \\
+\vec{u}(\vec{x}, t) &= \frac{1}{\rho} \sum^{8}_{i=0} f(\vec{x}, \vec{e_i}, t) \cdot \vec{e_i}
+\end{aligned}
+$$
 
 
 # Implementazione Sequenziale 
