@@ -123,7 +123,7 @@ f(\vec{x} + \vec{e_i}, \vec{e_i}, t + \Delta t) = f(\vec{x}, \vec{e_i}, t)
 $$
 
 Il passo e' illustrato anche in Figura \ref{figStreaming}, in cui le frecce piu' spesse indicano il
-[fluido](fluido) presente inizialmente nei siti del nodo centrale e la freccia vuota indica il passo di
+fluido presente inizialmente nei siti del nodo centrale e la freccia vuota indica il passo di
 propagazione. 
 
 ![Illustrazione del passo di propagazione\label{figStreaming}](img/streaming.png)
@@ -140,7 +140,6 @@ $$
 \vec{u}(\vec{x}, t) &= \frac{1}{\rho} \sum^{8}_{i=0} f(\vec{x}, \vec{e_i}, t) \cdot \vec{e_i}
 \end{aligned}
 $$
-
 
 # Implementazione Sequenziale 
 In questa sezione verra' discussa l'implementazione sequenziale in cui verranno anche illustrate
