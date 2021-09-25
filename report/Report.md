@@ -68,7 +68,7 @@ fluidi nel tempo. Tipicamente il compito dei solver e' quello di ottenere un'app
 soluzioni di queste equazioni per mezzo di metodi numerici appositi.
 In linea di principio generale, il compito di un solver e' il seguente: dato lo stato di un fluido
 descritto in termini della sua densita' macroscopica $\rho$ e della sua velocita' macroscopica
-$\vec{u}$, calcola per lo stato risultante al tempo $t+\Delta t$, dove $\Delta t$ e' il passo.
+$\vec{u}$, calcola lo stato risultante al tempo $t+\Delta t$, dove $\Delta t$ e' il passo.
 Nella fluidodinamica computazionale esistono diversi metodi e tecniche che possono essere impiegate
 per ottenere un'approssimazione di queste soluzioni, ma proprio per la natura delle equazioni
 parziali differenziali, molti di questi risultano molto dispendiosi in termini di risorse
@@ -77,7 +77,8 @@ alternativo, basato sugli automi cellulari anziche' sulla soluzione delle equazi
 Stokes. La motivazione principale della scelta e' che per natura risulta particolarmente indicato
 per sfruttare architetture multicore massive senza la necessita' di dover modificare radicalmente
 l'implementazione sequenziale.
-Come il nome suggerisce, questo metodo fu derivato originariamente dalla teoria cinetica dei gas di Ludwig Boltzmann, secondo la quale i fluidi/gas possono essere immaginati come un grande numero di
+Come il nome suggerisce, questo metodo fu derivato originariamente dalla teoria cinetica dei gas di
+Ludwig Boltzmann, secondo la quale i fluidi/gas possono essere immaginati come un grande numero di
 particelle che si muovono secondo moti apparentemente casuali. L'idea fondamentale del metodo
 reticolare di Boltzmann e' quella di discretizzare lo spazio nel quale queste particelle si muovono,
 confinandole ai nodi di un *reticolo*.
@@ -130,23 +131,58 @@ propagazione.
 
 ## Collisione
 Il passo di collisione e' leggermente piu' complicato rispetto al passo di propagazione, poiche'
-richiede il calcolo di diverse quantita'. 
-Dato un istante di tempo $t$ e una cella del lattice individuata della posizione $\vec{x}$, tramite
-$f$ e' poi possibile calcolare le quantita' macroscopiche citate in precedenza, secondo le relazioni
-seguenti
+richiede due passi intermedi in cui vengono calcolate le quantita' macroscopiche $\rho$ e $\vec{u}$. 
+Dato un istante di tempo $t$ e una cella del reticolo alla posizione $\vec{x}$, e' possibile
+calcolare le quantita' macroscopiche citate in precedenza mediante le equazioni seguenti 
 $$
 \begin{aligned}
 \rho(\vec{x}, t) &= \sum^{8}_{i=0} f(\vec{x}, \vec{e_i}, t) \\
 \vec{u}(\vec{x}, t) &= \frac{1}{\rho} \sum^{8}_{i=0} f(\vec{x}, \vec{e_i}, t) \cdot \vec{e_i}
 \end{aligned}
 $$
+Una volta ottenute le quantita' macroscopiche, e' necessario calcolare il valore della distribuzione
+di densita' di equilibrio, data dall'equazione di seguito
+$$
+f^{eq}(\vec{x}, \vec{e_i}, t) = \rho w_i
+[1 + 3\vec{e_i}\cdot \vec{u} + \frac{9}{2}(\vec{e_i} \cdot \vec{u})^2 - \frac{3}{2} |\vec{u}|^2]
+$$
+In cui $w_i$ indica un peso associato alla direzione *i-esima*. Il peso servea a modellare il fatto
+che alcune direzioni siano piu' probabili rispetto ad altre
+$$
+w_0 = \frac{4}{9}, \quad w_{1, \dots, 4} = \frac{1}{9} \quad w_{5, \dots, 8} = \frac{1}{36}
+$$
+Una volta ottenuto il valore di $f^{eq}(\vec{x}, \vec{e_i}, t)$ e' possibile infine calcolare per
+ogni posizione $\vec{x}$ e direzione $i$ il nuovo stato:
+$$
+f(\vec{x}, \vec{e_i}, t+ \Delta t) = f(\vec{x}, \vec{e_i}, t) +
+\omega [f^{eq}(\vec{x}, \vec{e_i}, t) - f(\vec{x}, \vec{e_i}, t)]
+$$
+Il termine $\omega$ e' un valore costante, determinato dalla *viscosita'* del fluido (una proprieta'
+appartenente ad ogni fluido)
+
+### Rimbalzo
+Quando le particelle di fluido collidono con una superficie solida non la devono attraverare, per
+cui e' necessario gestire questa condizione in un passo apposito. Tra i diversi metodi esistenti per
+gestire tale condizione e' stato scelto il metodo di *bounce-back*.
+
+![Passo di rimbalzo\label{figBounceBack}](img/bb_ultimate.png){ width=40% }
+
+In sintesi, se in una cella $\vec{x}$ del reticolo e' presente un ostacolo - che viene indicato da
+una variabile booleana - allora cio' che accade e' che il fluido viene "rimbalzato" verso la
+direzione opposta.
 
 # Implementazione Sequenziale 
 In questa sezione verra' discussa l'implementazione sequenziale in cui verranno anche illustrate
 ottimizzazioni a livello di compilazione (`O3`)
+
+L'implementazione attuale del simulatore non richiede particolari trattazioni. L'algoritmo
+corrisponde ai passi descritti in precedenza, per cui ogni passo di simulazione sara' dettato dai 3
+passi
 $$
 stream \rightarrow collide \rightarrow bounce
 $$
+
+
 \begin{algorithm}
 	\caption{LBM - Streaming Step}
 	\begin{algorithmic}
