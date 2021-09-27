@@ -1,10 +1,10 @@
 ---
 title: "Parallelizzazione del Metodo Reticolare di Boltzmann per la Simulazione di Fluidi in due dimensioni"
 author:
-- Matteo Brunello 
+- Matteo Brunello
 - Matr. 858867
-reference-section-title: "Bibliografia"        
-documentclass: article 
+reference-section-title: "Bibliografia"
+documentclass: article
 classoption: twocolumn
 papersize: A4
 lang: it-IT
@@ -18,8 +18,8 @@ csl: /home/matteo/.pandoc/csls/ieee.csl
 fontsize: 11pt
 geometry: "left=2cm,right=2cm,top=2cm,bottom=2cm"
 header-includes: |
-    \usepackage{algorithm} 
-    \usepackage{algpseudocode} 
+    \usepackage{algorithm}
+    \usepackage{algpseudocode}
     \setlength{\parskip}{0.5em}
     \setlength{\columnsep}{18pt}
     \makeatletter
@@ -47,7 +47,7 @@ header-includes: |
 
 # Introduzione
 La fluidodinamica computazionale (CFD) e' un campo della meccanica dei fluidi che impiega metodi
-numerici e computazionali, per analizzare e risolvere problemi che riguardano il flusso di fluidi. 
+numerici e computazionali, per analizzare e risolvere problemi che riguardano il flusso di fluidi.
 In questa relazione di laboratorio si discutera' dello sviluppo di un simulatore (o *solver*) di
 fluidi in due dimensioni. In particolare, un solver e' un software che utilizza le tecniche della
 fluidodinamica computazionale, per simulare il flusso di fluidi (liquidi o gas) e la loro interazione
@@ -61,7 +61,7 @@ sulla piattaforma CUDA, per cui verranno proposti anche alcuni miglioramenti pos
 sviluppi futuri. Infine, nella sezione 4 verranno messe a confronto le due versioni esaminando i
 diversi benchmarks eseguiti.
 
-# Il Metodo Reticolare di Boltzmann 
+# Il Metodo Reticolare di Boltzmann
 Quando di parla di fluidodinamica computazionale e' impossibile non parlare anche delle equazioni di
 Navier Stokes. Esse sono un insieme di equazioni parziali differenziali che descrivono il moto dei
 fluidi nel tempo. Tipicamente il compito dei solver e' quello di ottenere un'approssimazione delle
@@ -92,10 +92,10 @@ descritto a 2 dimensioni e a 9 direzioni possibili e' anche chiamato comunemente
 Le possibili direzioni vengono rappresentate matematicamente mediante 9 vettori $\vec{e_i},
 i=0,\dots,8$ a due componenti ($x$, $y$), definiti come:
 $$
-\vec{e_i} = 
+\vec{e_i} =
 \begin{cases}
     (0, 0)&i = 0 \\
-    (1, 0), (0, 1), (-1, 0), (0, -1)&i = 1,..4\\ 
+    (1, 0), (0, 1), (-1, 0), (0, -1)&i = 1,..4\\
     (1, 1), (-1, 1), (-1, -1), (1, -1)&i = 5,.. 8\\
 \end{cases}
 $$
@@ -104,7 +104,7 @@ Il fluido viene modellato poi mediante una funzione di densita' di probabilita' 
 $\vec{e_i}$, al tempo $t$ (tali densita' sono indicate anche come *densita' microscopiche*).
 Come detto precedentemente, quello che si vuole ottenere e' lo stato del fluido al tempo $t+\Delta
 t$, cioe' dato il valore di $f(\vec{x}, \vec{e_i}, t)$, trovare il valore di $f(\vec{x}, \vec{e_i},
-t+\Delta t)$.  
+t+\Delta t)$.
 Nel metodo reticolare di Boltzmann il calcolo del nuovo stato e' eseguito per mezzo di tre passi
 intermedi:
 
@@ -125,15 +125,15 @@ $$
 
 Il passo e' illustrato anche in Figura \ref{figStreaming}, in cui le frecce piu' spesse indicano il
 fluido presente inizialmente nei siti del nodo centrale e la freccia vuota indica il passo di
-propagazione. 
+propagazione.
 
 ![Illustrazione del passo di propagazione\label{figStreaming}](img/streaming.png)
 
 ## Collisione
 Il passo di collisione e' leggermente piu' complicato rispetto al passo di propagazione, poiche'
-richiede due passi intermedi in cui vengono calcolate le quantita' macroscopiche $\rho$ e $\vec{u}$. 
+richiede due passi intermedi in cui vengono calcolate le quantita' macroscopiche $\rho$ e $\vec{u}$.
 Dato un istante di tempo $t$ e una cella del reticolo alla posizione $\vec{x}$, e' possibile
-calcolare le quantita' macroscopiche citate in precedenza mediante le equazioni seguenti 
+calcolare le quantita' macroscopiche citate in precedenza mediante le equazioni seguenti
 $$
 \begin{aligned}
 \rho(\vec{x}, t) &= \sum^{8}_{i=0} f(\vec{x}, \vec{e_i}, t) \\
@@ -171,37 +171,71 @@ In sintesi, se in una cella $\vec{x}$ del reticolo e' presente un ostacolo - che
 una variabile booleana - allora cio' che accade e' che il fluido viene "rimbalzato" verso la
 direzione opposta.
 
-# Implementazione Sequenziale 
+# Implementazione Sequenziale
 In questa sezione verra' discussa l'implementazione sequenziale in cui verranno anche illustrate
 ottimizzazioni a livello di compilazione (`O3`)
 
-L'implementazione attuale del simulatore non richiede particolari trattazioni. L'algoritmo
-corrisponde ai passi descritti in precedenza, per cui ogni passo di simulazione sara' dettato dai 3
-passi
+L'implementazione attuale del simulatore non richiede particolari trattazioni.
+L'algoritmo corrisponde ai passi descritti in precedenza, per cui ogni passo di
+simulazione sara' dettato dai 3 passi
 $$
 stream \rightarrow collide \rightarrow bounce
 $$
+Nell'implementazione, il modello `D2Q9` e' stato rappresentato utilizzando una
+matrice di dimensioni $larghezza \times altezza$ di nodi di reticolo. Ogni nodo
+contiene il valore di $f$ in tutte le 9 direzioni e il valore del vettore a due
+componenti $\vec{u}$.
+```c
+typedef Real float;
+#define Q 9
 
+typedef struct LatticeNode {
+    Real[Q] f;
+    Vector2D<Real> u = {0, 0};
+} LatticeNode;
+
+LatticeNode[WIDTH][HEIGHT] lattice;
+```
+Siccome i 3 steps necessitano dei valori di $f$ al passo precedente, vengono
+mantenute in memoria due reticoli: uno che conterra' i valori al tempo $t$,
+mentre l'altro al tempo $t + \Delta t$. Alla fine di ogni time-step, i puntatori
+dei relativi reticoli vengono scambiati.
+Per poter visualizzare la simulazione, lo stato viene poi scritto all'interno di
+un file VTK in modo da poter essere usufruito dal software di visualizzazione
+Paraview\textsuperscript{\textcopyright}.
 
 \begin{algorithm}
-	\caption{LBM - Streaming Step}
-	\begin{algorithmic}
-		\For {$x=0$ to $width$}
-		  \For {$y=0$ to $height$}
-				\State 
+    \caption{Step di simulazione}
+    \begin{algorithmic}
+        \State Compute collide step $l \rightarrow l$
         \State Compute streaming step $l \rightarrow l_t$
+        \State Compute bounce step $l_t$
+        \State Write state to VTK file
         \State Swap $l$ with $l_t$
-			\EndFor
-		\EndFor
-	\end{algorithmic} 
+    \end{algorithmic}
 \end{algorithm}
 
-# Implementazione Parallela su GPU 
+
+# Implementazione Parallela su GPU
 In questa sezione verra' discussa l'implementazione su GPU
 
+\begin{algorithm}
+    \caption{LBM - Streaming Step}
+    \begin{algorithmic}
+        \For {$x=0$ to $width$}
+            \For {$y=0$ to $height$}
+                \State Compute collide step $l \rightarrow l$
+                \State Compute streaming step $l \rightarrow l_t$
+                \State Compute bounce step $l_t$
+                \State Swap $l$ with $l_t$
+            \EndFor
+        \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
 # Risultati e benchmarks
-In questa sezione verranno discussi gli esperimenti/benchmarks della versione sequenziale e
-parallela. Inoltre verranno esposti i grafici dello speedup.   
+In questa sezione verranno discussi gli esperimenti/benchmarks della versione
+sequenziale e parallela. Inoltre verranno esposti i grafici dello speedup.
 
 # Conclusioni
-In questa sezione verranno messe le conclusioni tratte dagli esperimenti 
+In questa sezione verranno messe le conclusioni tratte dagli esperimenti
