@@ -175,11 +175,14 @@ direzione opposta.
 In questa sezione verra' discussa l'implementazione sequenziale in cui verranno anche illustrate
 ottimizzazioni a livello di compilazione (`O3`)
 
-L'implementazione attuale del simulatore non richiede particolari trattazioni.
-L'algoritmo corrisponde ai passi descritti in precedenza, per cui ogni passo di
-simulazione sara' dettato dai 3 passi
+L'implementazione attuale del simulatore non richiede particolari trattazioni
+dal punto di vista algoritmico.
+Per eseguire uno step di simulazione, l'algoritmo esegue sequenzialmente i passi
+descritti in precedenza. I passi stream e collide in particolare devono essere
+eseguiti in sequenza, poiche' il passo di propagazione eseguito su una cella
+arbitraria, necessita di modificare i valori delle celle adiacenti.
 $$
-stream \rightarrow collide \rightarrow bounce
+collide \rightarrow stream \rightarrow bounce
 $$
 Nell'implementazione, il modello `D2Q9` e' stato rappresentato utilizzando una
 matrice di dimensioni $larghezza \times altezza$ di nodi di reticolo. Ogni nodo
@@ -197,39 +200,84 @@ typedef struct LatticeNode {
 LatticeNode[WIDTH][HEIGHT] lattice;
 ```
 Siccome i 3 steps necessitano dei valori di $f$ al passo precedente, vengono
-mantenute in memoria due reticoli: uno che conterra' i valori al tempo $t$,
-mentre l'altro al tempo $t + \Delta t$. Alla fine di ogni time-step, i puntatori
-dei relativi reticoli vengono scambiati.
-Per poter visualizzare la simulazione, lo stato viene poi scritto all'interno di
-un file VTK in modo da poter essere usufruito dal software di visualizzazione
+mantenute in memoria due reticoli: uno ($l$) che conterra' i valori al tempo
+$t$, mentre l'altro ($l'$) al tempo $t + \Delta t$. Alla fine di ogni time-step,
+i puntatori dei relativi reticoli vengono scambiati.  Per poter visualizzare la
+simulazione, lo stato viene poi scritto all'interno di un file VTK in modo da
+poter essere usufruito dal software di visualizzazione
 Paraview\textsuperscript{\textcopyright}.
 
 \begin{algorithm}
-    \caption{Step di simulazione}
+    \caption{Passo di simulazione}
     \begin{algorithmic}
-        \State Compute collide step $l \rightarrow l$
-        \State Compute streaming step $l \rightarrow l_t$
-        \State Compute bounce step $l_t$
+        \State Compute collide step on $l$
+        \State Compute streaming step $l \rightarrow l'$
+        \State Compute bounce step on $l'$
         \State Write state to VTK file
-        \State Swap $l$ with $l_t$
+        \State Swap $l$ with $l'$
     \end{algorithmic}
 \end{algorithm}
 
-
-# Implementazione Parallela su GPU
-In questa sezione verra' discussa l'implementazione su GPU
+Nello specifico, il passo di collisione dovra' calcolare la nuova densita' per
+ogni cella del reticolo per ogni direzione. Il passo e' riassunto per mezzo
+dell'algoritmo seguente.
 
 \begin{algorithm}
-    \caption{LBM - Streaming Step}
+    \caption{Passo di Collisione}
     \begin{algorithmic}
         \For {$x=0$ to $width$}
             \For {$y=0$ to $height$}
-                \State Compute collide step $l \rightarrow l$
-                \State Compute streaming step $l \rightarrow l_t$
-                \State Compute bounce step $l_t$
-                \State Swap $l$ with $l_t$
+                \State $\vec{x}_{pos} = (x, y)$
+                \State Compute $\rho(\vec{x}_{pos})$ and $\vec{u}(\vec{x}_{pos})$
+                \For {i = 0 to Q}
+                    \State Compute $f^{eq}(\vec{x}_{pos})$ using $\rho$ and
+                    $\vec{u}$
+                    \State $f_i(\vec{x}_{pos}) \mathrel{+}= \Omega
+                    [f^{eq}_i(\vec{x}_{pos}) - f_i(\vec{x}_{pos})]$
+                \EndFor
             \EndFor
         \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+I cicli piu' esterni servono a scorrere l'intero spazio bidimensionale, in cui
+in ogni cella vengono calcolate le quantita' macroscopiche necessarie per il
+calcolo di $f^{eq}$. Nel ciclo piu' interno vengono infine calcolate le nuove
+densita' associate ad ogni direzione $i$.
+
+\begin{algorithm}
+    \caption{Passo di Propagazione}
+    \begin{algorithmic}
+        \For {$x=0$ to $width$}
+            \For {$y=0$ to $height$}
+                \For {i = 0 to Q}
+                    \State $\vec{x}_{pos} = (x, y)$
+                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+                \EndFor
+            \EndFor
+        \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+Il passo di propagazione e' invece piu' semplice, e consiste essenzialmente
+nello scorrere l'intero spazio del reticolo e aggiornare opportunamente le nuove
+densita' associate ad ogni direzione nel reticolo $f'$.
+
+# Implementazione Parallela su GPU
+La parallelizzazione di simulazioni basate sugli automi cellulari e' un problema
+generalmente conosciuto e di facile parallelizzazione. Piu' nel dettaglio, si
+sta parlando di impiegare metodi di parallelizzazione per computazioni sincrone.
+Come visto, la parallelizzazione di queste computazioni e' caratterizzata da un
+punto di sincronizzazione per tutti i proccessi coinvolti.
+Per il modello di programmazione scelto (SPMT), la sincronizzazione e' a livello
+di device, ed e' data in modo implicito dal lancio di kernel in modo sequenziale.
+
+\begin{algorithm}
+    \caption{Passo di Simulazione Parallelo}
+    \begin{algorithmic}
+        \State lancia kernel 1
+        \State sincronizza()
+        \State lancia kernel 2
     \end{algorithmic}
 \end{algorithm}
 
