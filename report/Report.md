@@ -210,10 +210,9 @@ Paraview\textsuperscript{\textcopyright}.
 \begin{algorithm}
     \caption{Passo di simulazione}
     \begin{algorithmic}
-        \State Compute collide step on $l$
-        \State Compute streaming step $l \rightarrow l'$
-        \State Compute bounce step on $l'$
-        \State Write state to VTK file
+        \State Compute $Collide$ step on $l$
+        \State Compute $Streaming$ step $l \rightarrow l'$
+        \State Compute $Bounce$ step on $l'$
         \State Swap $l$ with $l'$
     \end{algorithmic}
 \end{algorithm}
@@ -265,25 +264,70 @@ densita' associate ad ogni direzione nel reticolo $f'$.
 
 # Implementazione Parallela su GPU
 La parallelizzazione di simulazioni basate sugli automi cellulari e' un problema
-generalmente conosciuto e di facile parallelizzazione. Piu' nel dettaglio, si
-sta parlando di impiegare metodi di parallelizzazione per computazioni sincrone.
-Come visto, la parallelizzazione di queste computazioni e' caratterizzata da un
-punto di sincronizzazione per tutti i proccessi coinvolti.
-Per il modello di programmazione scelto (SPMT), la sincronizzazione e' a livello
-di device, ed e' data in modo implicito dal lancio di kernel in modo sequenziale.
+generalmente conosciuto e di facile parallelizzazione dal momento che si
+tratta di computazioni sincrone. Come ben noto, tali computazioni sono
+caratterizzate da un punto di sincronizzazione per tutti i proccessi coinvolti,
+tipicamente inserito prima della fine di un passo di simulazione.
+Il modello di programmazione scelto per la parallelizzazione del simulatore e'
+*Single Program Multiple Threads* (SPMT), supportato dalla piattaforma di
+programmazione CUDA. Sfruttando l'indipendenza dei dati tra celle del reticolo
+e' possibile "mappare" idealmente ogni thread ad ogni cella. Da questo punto di
+vista, quindi, i threads non necessitano di nessuna sincronizzazione a livello
+di threads block, rendendo piu' semplice l'implementazione. L'unica dipendenza
+e' evidenziata dalla necessita' dei 3 sotto-passi di simulazione discussi in
+precedenza di essere eseguiti in modo sincrono. Per poter sincronizzare tutti i
+thread blocks tra di loro, i 3 sotto-passi di simulazione sono stati
+implementati come CUDA kernels. Il passo di simulazione, quindi, consistera'
+semplicemente in una chiamata ripetuta dei kernels in sequenza e di una
+successiva sincronizzazione a livello di device. Alla fine dei sotto-passi, si
+trasferiscono i dati del reticolo dal device all'host. Anche in questo caso, i
+puntatori dei reticoli $ld$ e $ld$ (allocati sul device) vengono scambiati tra
+loro.
 
 \begin{algorithm}
     \caption{Passo di Simulazione Parallelo}
     \begin{algorithmic}
-        \State lancia kernel 1
-        \State sincronizza()
-        \State lancia kernel 2
+        \State Launch $CollideKernel$ step on $ld$
+        \State Synchronize with device
+        \State Launch $StreamKernel$ step $ld \rightarrow ld'$
+        \State Synchronize with device
+        \State Launch $BounceKernel$ step on $ld'$
+        \State Transfer memory back to host $ld' \rightarrow l$
+        \State Swap $ld$ with $ld'$
+    \end{algorithmic}
+\end{algorithm}
+
+La parallelizzazione dei singoli passi, invece, consiste nell'eliminazione dei
+due cicli for dell'implementazione sequenziale necessari a scorrere l'intero
+spazio bidimensionale della simulazione. Grazie al modello di programmazione
+scelto, tale parallelizzazione e' molto semplice, per cui basta eliminare i due
+cicli `for` e sostituire gli indici con l'indice $x$ e $y$ di thread all'interno
+del blocco. Di seguito e' riportato solo il passo di collisione, siccome tutti
+gli altri passi sono stati parallelizzati seguendo lo stesso principio
+
+\begin{algorithm}
+    \caption{Passo di Collisione Parallelo}
+    \begin{algorithmic}
+        \State $x = blockIdx.x * blockDim.x + threadIdx.x$
+        \State $y = blockIdx.y * blockDim.y + threadIdx.y$
+        \State $\vec{x}_{pos} = (x, y)$
+        \State Compute $\rho(\vec{x}_{pos})$ and $\vec{u}(\vec{x}_{pos})$
+        \For {i = 0 to Q}
+            \State Compute $f^{eq}(\vec{x}_{pos})$ using $\rho$ and
+            $\vec{u}$
+            \State $f_i(\vec{x}_{pos}) \mathrel{+}= \Omega
+            [f^{eq}_i(\vec{x}_{pos}) - f_i(\vec{x}_{pos})]$
+        \EndFor
     \end{algorithmic}
 \end{algorithm}
 
 # Risultati e benchmarks
-In questa sezione verranno discussi gli esperimenti/benchmarks della versione
-sequenziale e parallela. Inoltre verranno esposti i grafici dello speedup.
+Per poter eliminare ogni interferenza dovuta a tempi di esecuzione sincroni,
+ogni test e' stato effettuato evitando di eseguire il passo di scrittura dello
+stato all'interno dei files per la visualizzazione. In questo modo, i tempi di
+esecuzione comprendono solo i tempi di computazione e di trasferimento in
+memoria (nel caso dell'implementazione parallela, anche dei tempi di
+trasferimento dati *device-host*).
 
 # Conclusioni
 In questa sezione verranno messe le conclusioni tratte dagli esperimenti
