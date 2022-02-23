@@ -6,8 +6,7 @@
 #include "common/engines/VtkEngine.hpp"
 #include "cpu/CpuSimulation.hpp"
 
-
-void run_benchmarks(Simulation& simulation, unsigned int steps) {
+void run_benchmarks(Simulation &simulation, unsigned int steps) {
   using std::chrono::high_resolution_clock;
   using std::chrono::duration_cast;
   using std::chrono::duration;
@@ -27,8 +26,10 @@ void run_benchmarks(Simulation& simulation, unsigned int steps) {
 }
 
 int main(int argc, char **argv) {
-  CLI::App app( "Lattice Boltzmann Method CFD Solver");
-  enum ProgramMode { BENCHMARK, REALTIME, PARAVIEW };
+  CLI::App app("Lattice Boltzmann Method CFD Solver");
+  enum ProgramMode {
+    BENCHMARK, REALTIME, PARAVIEW
+  };
   static const char *mode_str[] = {"benchmark", "realtime simulation", "ParaView simulation"};
 
   bool gpu_support = false;
@@ -36,15 +37,20 @@ int main(int argc, char **argv) {
   std::pair<unsigned, unsigned> dim(100, 100);
   unsigned int steps = 10000;
   app.add_option("--gpu", gpu_support, "Whether to use GPU acceleration or not (Default false)");
-  app.add_option("--mode", mode, "Run the program on a given mode. Available values are:\n\t1: Benchmark\n\t2: Realtime simulation (Default)\n\t3: ParaView simulation");
+  app.add_option("--mode", mode,
+                 "Run the program on a given mode. Available values are:\n\t1: Benchmark\n\t2: Realtime simulation (Default)\n\t3: ParaView simulation");
   app.add_option("--dim", dim, "Dimensions of the simulation expressed as WIDTH x HEIGHT (default 100 100)");
   app.add_option("--step", steps, "Number of time steps to be performed in the simulation (default 10000)");
 
   CLI11_PARSE(app, argc, argv)
-  std::cout << "Running a " << mode_str[mode-1] << " on a " << dim.first << "x" << dim.second << " grid " << (gpu_support ? "with" : "without") << " GPU acceleration enabled" << std::endl;
+  std::cout << "Running a "
+            << mode_str[mode] << " on a "
+            << dim.first << "x" << dim.second << " grid "
+            << (gpu_support ? "with" : "without")
+            << " GPU acceleration enabled" << std::endl;
 
   Simulation *simulation;
-  if(gpu_support) {
+  if (gpu_support) {
     simulation = new GpuSimulation(dim.first, dim.second);
   } else {
     simulation = new CpuSimulation(dim.first, dim.second);

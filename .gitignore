@@ -2,6 +2,7 @@
 *.o
 /bin
 /cmake-build-default/
+CMakeFiles
 /cmake-*/
 .idea
 *.pdf

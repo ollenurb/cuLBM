@@ -9,7 +9,7 @@
 
 /* Global variables to store block and grid dim */
 /* Thread blocks are squares therefore they'll have dimension BLOCK_DIMxBLOCK_DIM */
-#define BLOCK_DIM 10
+#define BLOCK_DIM 16
 dim3 dim_block;
 dim3 dim_grid;
 
@@ -61,7 +61,7 @@ __global__ void stream(LatticeNode *lattice, LatticeNode *lattice_t) {
   unsigned index, index_t;
   index = index(x_i, y_i);
 
-
+  // TODO: Non mi sembra che chiami piu' threads del dovuto, controlla
   if (index < device::WIDTH * device::HEIGHT) {
     /* Stream away fluid on each lattice site */
     for (int i = 0; i < Q; i++) {
@@ -69,7 +69,7 @@ __global__ void stream(LatticeNode *lattice, LatticeNode *lattice_t) {
       y_t = y_i + device::e[i].y;
       index_t = index(x_t, y_t);
 
-      if (x_t >= 0 && y_t >= 0 && x_t < device::WIDTH && y_t < device::HEIGHT) {
+      if (x_t > 0 && y_t > 0 && x_t < device::WIDTH && y_t < device::HEIGHT) {
         lattice_t[index_t].f[i] = lattice[index].f[i];
       }
     }
@@ -97,6 +97,7 @@ __global__ void collide(LatticeNode *lattice) {
     compute_macroscopics(cur_node, new_u, total_density);
 
     /* Compute densities at thermal equilibrium */
+#pragma unroll
     for (int i = 0; i < Q; i++) {
       e_dp_u = new_u * device::e[i];
       f_eq = (total_density * device::W[i]) * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * new_u.mod_sqr()));
@@ -111,16 +112,16 @@ __device__ void compute_macroscopics(const LatticeNode& node, Vector2D<Real> &ne
   rho = 0;
   new_u = {0, 0};
 
+#pragma unroll
   for (int i = 0; i < Q; i++) {
     rho += node.f[i];
     /* Accumulate the f inside each component of flow_velocity */
     new_u.x += device::e[i].x * node.f[i]; // U_{x} component
     new_u.y += device::e[i].y * node.f[i]; // U_{y} component
   }
-  /* Compute average to get the actual value of flow_velocity */
-  /* "Cast" to 0 if the velocity is negative */
-  new_u.x = (rho > 0) ? (new_u.x / rho) : 0;
-  new_u.y = (rho > 0) ? (new_u.y / rho) : 0;
+  /* Normalize over Rho */
+  new_u.x = new_u.x / rho;
+  new_u.y = new_u.y / rho;
 }
 
 /* Bounce back fluid on obstacles */
@@ -152,17 +153,19 @@ __global__ void bounce(LatticeNode *lattice_t) {
 /* ============================================================================================================== */
 GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) {
   SIZE = WIDTH * HEIGHT;
+//  cudaDeviceProp deviceProp;
+
   dim_block = dim3(BLOCK_DIM, BLOCK_DIM);
-  dim_grid = dim3(WIDTH / dim_block.x, HEIGHT / dim_block.y);
+  dim_grid = dim3((WIDTH + dim_block.x - 1) / dim_block.x, (HEIGHT + dim_block.y - 1) / dim_block.y);
   /* Allocate space for lattice objects on the device */
   cudaMemcpyToSymbol(device::WIDTH, &WIDTH, sizeof(unsigned int));
   cudaMemcpyToSymbol(device::HEIGHT, &HEIGHT, sizeof(unsigned int));
   cudaMemcpyToSymbol(device::e, &D2Q9::e, sizeof(Vector2D<int>) * Q);
   cudaMemcpyToSymbol(device::W, &D2Q9::W, sizeof(Real) * Q);
 
+  /* Allocate 2 lattices on the device. The streaming operator needs it */
   cudaMalloc(&device_lattice, sizeof(LatticeNode) * SIZE);
   cudaMalloc(&device_lattice_t, sizeof(LatticeNode) * SIZE);
-
   host_lattice = new LatticeNode[SIZE];
 
   /* Compute the initial configuration's parameters */
@@ -170,15 +173,13 @@ GpuSimulation::GpuSimulation(unsigned int w, unsigned int h) : Simulation(w, h) 
   LatticeNode tmp_init_conf;
   tmp_init_conf.u = D2Q9::VELOCITY;
   /* Assign each lattice with the equilibrium f */
+#pragma unroll
   for (int i = 0; i < Q; i++) {
     e_dp_u = tmp_init_conf.u * D2Q9::e[i];
     tmp_init_conf.f[i] = D2Q9::W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * tmp_init_conf.u.mod_sqr()));
   }
 
   cudaMemcpyToSymbol(device::INITIAL_CONFIG, &tmp_init_conf, sizeof(LatticeNode));
-  /* Initialize */
-  printf("Block: %d, %d, %d, Grid: %d, %d, %d\n", dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y, dim_grid.z);
-
   init_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
   cudaDeviceSynchronize();
 }
@@ -194,7 +195,7 @@ void GpuSimulation::step() {
   stream<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
   bounce<<<dim_grid, dim_block>>>(device_lattice_t);
   cudaDeviceSynchronize();
-  /* Swap pointers */
+  /* Swap device pointers */
   std::swap(device_lattice_t, device_lattice);
 }
 
