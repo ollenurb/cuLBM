@@ -75,20 +75,23 @@ proprio per la natura delle equazioni parziali differenziali, molti di questi
 risultano molto dispendiosi in termini di risorse computazionali. Il metodo alla
 base del solver che e' stato scelto, invece, rappresenta un'approccio
 alternativo, basato sugli automi cellulari anziche' sulla soluzione delle
-equazioni di Navier Stokes. La motivazione principale della scelta e' che per
-natura risulta particolarmente indicato per sfruttare architetture multicore
-massive senza la necessita' di dover modificare radicalmente l'implementazione
-sequenziale. Il metodo pone le sue basi nella teoria cinetica dei gas di Ludwig
-Boltzmann, secondo la quale i fluidi/gas possono essere immaginati come un
-grande numero di particelle che si muovono secondo moti apparentemente casuali.
-L'idea fondamentale del metodo reticolare di Boltzmann e' quella di
-discretizzare lo spazio nel quale queste particelle si muovono, confinandole ai
-nodi di un *reticolo*. In generale, in uno spazio a due dimensioni, le
-particelle all'interno di un nodo sono limitate a muoversi in 9 possibili
-direzioni (inclusa la possibilita' di rimanere stazionarie). Questo modello
-descritto a 2 dimensioni e a 9 direzioni possibili e' anche chiamato comunemente
-modello `D2Q9` \footnote{Naturalmente esistono altri modelli quali il D3Q19,
-che rappresenta uno spazio a 3 dimensioni con 19 possibili direzioni}.
+equazioni di Navier Stokes. La motivazione principale della scelta e' che
+risulta particolarmente indicato a sfruttare al meglio architetture multicore
+massive, senza la necessita' di dover modificare radicalmente l'implementazione
+sequenziale.
+
+Il metodo pone le sue basi nella teoria cinetica dei gas di Ludwig Boltzmann,
+secondo la quale i fluidi/gas possono essere immaginati come un grande numero di
+particelle che si muovono secondo moti apparentemente casuali. L'idea
+fondamentale del metodo reticolare di Boltzmann e' quella di discretizzare lo
+spazio nel quale queste particelle si muovono, confinandole ai nodi di un
+*reticolo*. In generale, in uno spazio a due dimensioni, le particelle
+all'interno di un nodo sono limitate a muoversi in 9 possibili direzioni
+(inclusa la possibilita' di rimanere stazionarie). Questo modello in cui lo
+spazio bidimensionale e' discretizzato in 9 direzioni possibili, e' anche
+chiamato comunemente modello `D2Q9`\footnote{Naturalmente esistono altri
+modelli quali il D3Q19, che rappresenta uno spazio a 3 dimensioni con 19
+possibili direzioni}.
 
 ![Nodo del reticolo del modello D2Q9\label{imgNode}](img/d2q9_node.png){ width=20% }
 
@@ -109,7 +112,7 @@ funzione di densita' di probabilita' $f(\vec{x}, \vec{e_i}, t)$, che indica la
 densita' di fluido alla posizione $\vec{x}$, con direzione $\vec{e_i}$, al tempo
 $t$. Come detto precedentemente, quello che si vuole ottenere e' lo stato del
 fluido al tempo $t+\Delta t$, cioe' dato il valore di $f(\vec{x}, \vec{e_i},
-t)$, trovare il valore di $f(\vec{x}, \vec{e_i}, t+\Delta t)$.
+t)$, si deve trovare il valore di $f(\vec{x}, \vec{e_i}, t+\Delta t)$.
 Nel metodo reticolare di Boltzmann il calcolo del nuovo stato e' eseguito per
 mezzo di tre passi:
 
@@ -124,16 +127,17 @@ E' dimostrabile matematicamente che questi 3 passaggi rappresentano
 un'approssimazione delle equazioni di Navier Stokes.
 
 ## Propagazione
-Il passo di propagazione consiste essenzialmente nel trasferire la densita' di fluido presente alla
-direzione $\vec{e_i}$, di un nodo del reticolo alla posizione $\vec{x}$, alla direzione $\vec{e_i}$
-al nodo adiacente corrispondente alla posizione $\vec{x} + \vec{e_i}$. Dal punto di vista del
-metodo, il passo e' riassumibile con la seguente equazione:
+Il passo di propagazione consiste essenzialmente nel trasferire la densita' di
+fluido presente alla direzione $\vec{e_i}$, di un nodo del reticolo alla
+posizione $\vec{x}$, alla direzione $\vec{e_i}$ al nodo adiacente corrispondente
+alla posizione $\vec{x} + \vec{e_i}$. Dal punto di vista del metodo, il passo e'
+riassumibile con la seguente equazione:
 $$
 f(\vec{x} + \vec{e_i}, \vec{e_i}, t + \Delta t) = f(\vec{x}, \vec{e_i}, t)
 $$
-Il passo e' illustrato anche in Figura \ref{figStreaming}, in cui le frecce piu' spesse indicano il
-fluido presente inizialmente nei siti del nodo centrale e la freccia vuota indica il passo di
-propagazione.
+Il passo e' illustrato anche in Figura \ref{figStreaming}, in cui le frecce piu'
+spesse indicano il fluido presente inizialmente nei siti del nodo centrale e la
+freccia vuota indica il passo di propagazione.
 
 ![Illustrazione del passo di propagazione\label{figStreaming}](img/streaming.png)
 
@@ -254,16 +258,18 @@ densita' associate ad ogni direzione $i$.
 Il passo di propagazione e' molto simile a quello di collisione, e consiste
 solamente nel trasferimento delle densita' in ogni direzione nel reticolo di
 supporto.
-Nel passo di collisione, e' stato deciso di fare l'*unwrap* del loop sulle
-direzioni, in modo da eliminare anche operazioni di modulo che avrebbero
-diversamente appesantito il programma.
+Nel passo di collisione, e' stato deciso di fare l'*unwrap* del loop per
+scorrere le direzioni, in modo da eliminare anche operazioni di modulo che
+avrebbero diversamente appesantito il programma.
 
 \begin{algorithm}
     \caption{Passo di Collisione}
     \begin{algorithmic}
         \For {$x=1$ to $width$}
             \For {$y=1$ to $height$}
-                \State $f'_1(\langle x+1, y \rangle) = f_1(\langle x, y \rangle)$
+                \For {i = 0 to Q}
+                    \State $f'(\vec{x} + \vec{e}_i) = f(\vec{x})$
+                \EndFor
             \EndFor
         \EndFor
     \end{algorithmic}
@@ -322,47 +328,60 @@ alla memoria.
 
 # Implementazione Parallela
 Per la parallelizzazione del solver, si e' seguita la metodologia descritta in
-[@9092429]. E' possibile notare come i due loop piu' esterni di ogni metodo
-servano essenzialmente a mappare l'intero spazio della simulazione, per cui
+[@9092429]. E' possibile notare come i due loop piu' esterni di ogni metodo,
+servano essenzialmente a scorrere l'intero spazio della simulazione, per cui
 evidenziano come la computazione sia di tipo data parallel *globally
 synchronous*. Per questa ragione, e' stato deciso di implementare il solver
 parallelo su piattaforma CUDA, poiche' si presta particolarmente bene a questo
-tipo di computazioni.
-
-Per poter sincronizzare tutti i thread blocks tra di loro, i 3 sotto-passi di
-simulazione sono stati implementati come CUDA kernels. Il passo di simulazione,
-quindi, consistera' semplicemente in una chiamata ripetuta dei kernels in
-sequenza e di una successiva sincronizzazione a livello di device. Alla fine dei
-sotto-passi, si trasferiscono i dati del reticolo dal device all'host. Anche in
-questo caso, i puntatori dei reticoli $ld$ e $ld$ (allocati sul device) vengono
-scambiati tra loro.
+tipo di computazioni. L'idea principale consiste essenzialmente nello sfruttare
+l'organizzazione bi-dimensionale fornita da CUDA per *"mappare"* un thread ad
+ogni nodo di reticolo della simulazione, per cui la grana compuazionale coincide
+con il corpo dei loop.
+Per poter implementare il metodo, ogni thread dovra' sincronizzarsi alla fine di
+ogni sotto-passo con tutti gli altri threads della griglia. In altri termini, e'
+necessario implementare una barrier inter-blocco (a livello di griglia). Per
+implementare questa primitiva di sincronizzazione globale ci sono tre metodi
+principali [@5537722]: 1) Sfruttare la barrier implicita alla fine
+dell'esecuzione di un kernel (*CPU Synchronization*); 2) Utilizzare una
+variabile globale, accedendola in mutua esclusione (*GPU lock-based
+Synchronization*); 3) Sincronizzazione lockfree (*GPU lock-free
+Synchronization*).
+Nonostante la sincronizzazione implicita dei kernel introduca un overhead dovuto
+al lancio consecutivo di piu' kernel, e' stato scelto il primo metodo.
+Le motivazioni risiedono in primo luogo nella semplicita' di implementazione, e
+in secondo luogo al fatto che un'implementazione corretta delle soluzioni 2 e 3
+introduce troppo overhead, al punto di avere performance peggiori della prima
+soluzione [@5537722].
+Il passo di simulazione, quindi, consistera' semplicemente in una chiamata dei
+kernels corrispondenti ai sotto-passi della simulazione in sequenza, e di una
+successiva sincronizzazione a livello di device. Alla fine dei sotto-passi, si
+trasferiscono i dati del reticolo allocato sul device all'host. Cosi' come
+nell'implementazione sequenziale, anche qui e' necessario allocare un reticolo
+di supporto sul device, per cui alla fine dello step si scambiano i puntatori
+dei reticoli $f_{dev}$ ed $f'_{dev}$.
 
 \begin{algorithm}
     \caption{Passo di Simulazione Parallelo}
     \begin{algorithmic}
-        \State Launch $CollideKernel$ step on $ld$
+        \State CollideKernel<$n_{blocks}$, $n_{threads}$>($f_{dev}$)
         \State Synchronize with device
-        \State Launch $StreamKernel$ step $ld \rightarrow ld'$
+        \State StreamKernel<$n_{blocks}$, $n_{threads}$>($f_{dev}$, $f'_{dev}$)
         \State Synchronize with device
-        \State Launch $BounceKernel$ step on $ld'$
-        \State Transfer memory back to host $ld' \rightarrow l$
-        \State Swap $ld$ with $ld'$
+        \State BounceKernel<$n_{blocks}$, $n_{threads}$>($f'_{dev}$)
+        \State Transfer memory back to host $f_{dev}' \rightarrow f$
+        \State Swap $f_{dev}$ with $f'_{dev}$
     \end{algorithmic}
 \end{algorithm}
 
-La parallelizzazione dei singoli passi, invece, consiste nell'eliminazione dei
-due cicli for dell'implementazione sequenziale necessari a scorrere l'intero
-spazio bidimensionale della simulazione. Grazie al modello di programmazione
-scelto, tale parallelizzazione e' molto semplice, per cui basta eliminare i due
-cicli `for` e sostituire gli indici con l'indice $x$ e $y$ di thread all'interno
-del blocco. Di seguito e' riportato solo il passo di collisione, siccome tutti
-gli altri passi sono stati parallelizzati seguendo lo stesso principio
+Il passo di simulazione puo' essere modificato poi per trasferire i dati dal
+device in memoria solo ad un determinato numero di step, in modo da non
+introdurre troppo overhead dato dai trasferimenti della memoria.
 
 \begin{algorithm}
     \caption{Passo di Collisione Parallelo}
     \begin{algorithmic}
-        \State $x = blockIdx.x * blockDim.x + threadIdx.x$
-        \State $y = blockIdx.y * blockDim.y + threadIdx.y$
+        \State $x$ = blockIdx.x * blockDim.x + threadIdx.x
+        \State $y$ = blockIdx.y * blockDim.y + threadIdx.y
         \State $\vec{x}_{pos} = \langle x, y \rangle$
         \State Compute $\rho(\vec{x}_{pos})$ and $\vec{u}(\vec{x}_{pos})$
         \For {i = 0 to Q}
@@ -374,15 +393,23 @@ gli altri passi sono stati parallelizzati seguendo lo stesso principio
     \end{algorithmic}
 \end{algorithm}
 
+Come detto in precedenza, la parallelizzazione dei singoli passi, consiste
+nell'eliminazione dei due cicli for dell'implementazione sequenziale necessari a
+scorrere l'intero spazio bidimensionale della simulazione.
+Grazie al modello di programmazione scelto, tale parallelizzazione e' molto
+semplice, per cui basta eliminare i due cicli `for` e sostituire gli indici con
+l'indice $x$ e $y$ di thread all'interno della griglia. Siccome tutti i
+sotto-passi sono stati parallelizzati seguendo lo stesso principio, e' stato
+riportato solo il passo di collisione.
+
 # Risultati e benchmarks
-
-
 Per poter eliminare ogni interferenza dovuta a tempi di esecuzione sincroni,
 ogni test e' stato effettuato evitando di eseguire il passo di scrittura dello
 stato all'interno dei files per la visualizzazione. In questo modo, i tempi di
 esecuzione comprendono solo i tempi di computazione e di trasferimento in
 memoria (nel caso dell'implementazione parallela, anche dei tempi di
 trasferimento dati *device-host*).
+
 
 # Conclusioni
 In questa sezione verranno messe le conclusioni tratte dagli esperimenti
