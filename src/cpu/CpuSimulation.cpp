@@ -114,8 +114,8 @@ void CpuSimulation::collide() {
 }
 
 void CpuSimulation::bounce() {
-  for (int x = 0; x < WIDTH; x++) {
-    for (int y = 0; y < HEIGHT; y++) {
+  for (int x = 1; x < WIDTH; x++) {
+    for (int y = 1; y < HEIGHT; y++) {
       LatticeNode &cur_node = lattice_t[index(x, y)];
       if (cur_node.obstacle) {
         lattice_t[index((x+1), y    )].f[1] = cur_node.f[3];
