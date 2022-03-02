@@ -37,14 +37,14 @@ void VtkEngine::run() {
   }
 }
 
-void VtkEngine::write_data(FILE *fp, const D2Q9::LatticeNode* lattice) const {
+void VtkEngine::write_data(FILE *fp, const D2Q9::Lattice* lattice) const {
   // Write velocity
   fprintf(fp,"POINT_DATA %d\n", WIDTH*HEIGHT);
   fprintf(fp, "VECTORS velocity float\n");
   for(int x = 0; x < WIDTH; x++) {
     for(int y = 0; y < HEIGHT; y++) {
-      const D2Q9::LatticeNode &current = lattice[x * HEIGHT + y];
-      fprintf(fp, "%f %f %f\n", current.u.x, current.u.y, 0.0);
+      const Vector2D<Real> current = lattice->u[x][y];
+      fprintf(fp, "%f %f %f\n", current.x, current.y, 0.0);
     }
   }
   // TODO: Add curl

@@ -8,12 +8,15 @@ set(EXECUTABLE_NAME ${PROJECT_NAME})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/obj")
 
-
 # +=============================================+
 # +====+ Setup Headers, Sources and macros +====+
 # +=============================================+
-file(GLOB HEADERS src/common/*.hpp  src/common/engines/*.hpp src/common/*.cuh src/gpu/*.cuh src/cpu/*.hpp)
-file(GLOB SOURCES src/common/*.cpp  src/common/engines/*.cpp src/gpu/*.cu src/cpu/*.cpp)
+# I removed temporarily cuda files
+# src/common/*.cuh src/gpu/*.cuh
+# src/gpu/*.cu
+
+file(GLOB HEADERS src/common/*.hpp src/common/engines/*.hpp src/cpu/*.hpp)
+file(GLOB SOURCES src/common/*.cpp src/common/engines/*.cpp src/cpu/*.cpp)
 
 # +=============================================+
 # +========+ Setup libraries headers +==========+

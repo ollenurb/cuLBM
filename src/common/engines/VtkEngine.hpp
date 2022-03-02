@@ -16,7 +16,7 @@ private:
 
   // VTK-related functions
   void write_header(FILE *) const;
-  void write_data(FILE *file, const D2Q9::LatticeNode *lattice) const;
+  void write_data(FILE *file, const D2Q9::Lattice* lattice) const;
 
 public:
   explicit VtkEngine(Simulation &, unsigned int);

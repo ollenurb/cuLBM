@@ -2,7 +2,7 @@
 #include "SdlEngine.hpp"
 #include "../Utils.hpp"
 
-#define UPDATE_STEPS 120
+#define UPDATE_STEPS 1
 
 SdlEngine::SdlEngine(Simulation &r) : WIDTH(r.get_width()), HEIGHT(r.get_height()), simulation(r) {
   running = false;
@@ -49,7 +49,7 @@ void SdlEngine::process_events() {
 }
 
 void SdlEngine::render(SDL_Texture *) {
-  const D2Q9::LatticeNode *lattice = simulation.get_lattice();
+  const D2Q9::Lattice *lattice = simulation.get_lattice();
   void *pixels;
   int pitch;
   Uint32 *dest;
@@ -62,9 +62,8 @@ void SdlEngine::render(SDL_Texture *) {
   for (int y = 0; y < HEIGHT; y++) {
     dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
     for (int x = 0; x < WIDTH; x++) {
-      D2Q9::LatticeNode cur_node = lattice[x * HEIGHT + y];
-      b = std::min(cur_node.u.modulus() * 3, static_cast<Real>(1));
-      if(cur_node.obstacle) {
+      b = std::min(lattice->u[x][y].modulus() * 3, static_cast<Real>(1));
+      if (lattice->obstacle[x][y]) {
         *(dest + x) = ((0xFF000000 | (112 << 16) | (0 << 8) | 0));
       } else {
         *(dest + x) = utils::HSBtoRGB(0.5, 1, b);

@@ -6,13 +6,11 @@
 
 using namespace D2Q9;
 
-class CpuSimulation: public Simulation {
+class CpuSimulation : public Simulation {
 private:
   /* +=========+ Variables +=========+ */
-  LatticeNode* lattice;
-  LatticeNode* lattice_t;
-  LatticeNode initial_config;
-
+  Vector2D<Real> initial_config_u;
+  Real initial_config_f[Q];
   /* +=========+ CpuSimulation Steps +=========+ */
   void stream();
   void collide();
@@ -20,9 +18,7 @@ private:
 
 public:
   CpuSimulation(unsigned int, unsigned int);
-  ~CpuSimulation();
+
   /* Perform a simulation step: f(t) -> f(t + dt) */
   void step() override;
-  /* Get the lattice reference */
-  const D2Q9::LatticeNode *get_lattice() override;
 };

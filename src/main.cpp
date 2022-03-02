@@ -1,7 +1,6 @@
 #include <chrono>
 #include <iostream>
 #include "../lib/CLI11.hpp"
-#include "gpu/GpuSimulation.cuh"
 #include "common/engines/SdlEngine.hpp"
 #include "common/engines/VtkEngine.hpp"
 #include "cpu/CpuSimulation.hpp"
@@ -34,11 +33,11 @@ int main(int argc, char **argv) {
 
   bool gpu_support = false;
   enum ProgramMode mode = REALTIME;
-  std::pair<unsigned, unsigned> dim(100, 100);
+  std::pair<unsigned, unsigned> dim(600, 600);
   unsigned int steps = 10000;
   app.add_option("--gpu", gpu_support, "Whether to use GPU acceleration or not (Default false)");
   app.add_option("--mode", mode,
-                 "Run the program on a given mode. Available values are:\n\t1: Benchmark\n\t2: Realtime simulation (Default)\n\t3: ParaView simulation");
+                 "Run the program on a given mode. Available values are:\n\t0: Benchmark\n\t1: Realtime simulation (Default)\n\t2: ParaView simulation");
   app.add_option("--dim", dim, "Dimensions of the simulation expressed as WIDTH x HEIGHT (default 100 100)");
   app.add_option("--step", steps, "Number of time steps to be performed in the simulation (default 10000)");
 
@@ -50,11 +49,7 @@ int main(int argc, char **argv) {
             << " GPU acceleration enabled" << std::endl;
 
   Simulation *simulation;
-  if (gpu_support) {
-    simulation = new GpuSimulation(dim.first, dim.second);
-  } else {
-    simulation = new CpuSimulation(dim.first, dim.second);
-  }
+  simulation = new CpuSimulation(dim.first, dim.second);
 
   switch (mode) {
     case BENCHMARK: {
