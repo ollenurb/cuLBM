@@ -3,9 +3,9 @@
 #include "../lib/CLI11.hpp"
 #include "common/engines/SdlEngine.hpp"
 #include "common/engines/VtkEngine.hpp"
-#include "cpu/CpuSimulation.hpp"
+#include "cpu/CpuSolver.hpp"
 
-void run_benchmarks(Simulation &simulation, unsigned int steps) {
+void run_benchmarks(Solver &simulation, unsigned int steps) {
   using std::chrono::high_resolution_clock;
   using std::chrono::duration_cast;
   using std::chrono::duration;
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
   bool gpu_support = false;
   enum ProgramMode mode = REALTIME;
-  std::pair<unsigned, unsigned> dim(600, 600);
+  std::pair<unsigned, unsigned> dim(100, 100);
   unsigned int steps = 10000;
   app.add_option("--gpu", gpu_support, "Whether to use GPU acceleration or not (Default false)");
   app.add_option("--mode", mode,
@@ -48,8 +48,8 @@ int main(int argc, char **argv) {
             << (gpu_support ? "with" : "without")
             << " GPU acceleration enabled" << std::endl;
 
-  Simulation *simulation;
-  simulation = new CpuSimulation(dim.first, dim.second);
+  Solver *simulation;
+  simulation = new CpuSolver(dim.first, dim.second);
 
   switch (mode) {
     case BENCHMARK: {

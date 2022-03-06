@@ -3,32 +3,32 @@
 //
 #pragma once
 
-#include "../common/Simulation.hpp"
+#include "../common/Solver.hpp"
 #include "../common/Defines.hpp"
 #include "../common/D2Q9.hpp"
+#include "../cpu/CpuLattice.hpp"
+#include "GpuLattice.cuh"
 
 using namespace D2Q9;
 
-class GpuSimulation : public Simulation {
+class GpuSolver : public Solver {
 private:
   /* +=========+ Variables +=========+ */
   /* In this case we need more variables to hold both the host lattice and device lattice GPU references */
-  LatticeNode *host_lattice;
-  LatticeNode *device_lattice{};
-  LatticeNode *device_lattice_t{};
-
-  unsigned int SIZE;
+  CpuLattice host_lattice;
+  GpuLattice device_lattice;
+  GpuLattice device_lattice_t;
+  int get_device();
 
 public:
   /* +=========+ Constants +=========+ */
-  GpuSimulation(unsigned int, unsigned int);
+  GpuSolver(unsigned int, unsigned int);
 
-  ~GpuSimulation();
-
-  const D2Q9::LatticeNode *get_lattice() override;
+  ~GpuSolver();
 
   /* Perform a simulation step: f(t) -> f(t + dt) */
   void step() override;
+
 
 };
 

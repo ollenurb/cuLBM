@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Simulation.hpp"
+#include "../Solver.hpp"
 #include "SDL.h"
 
 class SdlEngine {
@@ -8,7 +8,7 @@ private:
   const unsigned int WIDTH;
   const unsigned int HEIGHT;
   bool running;
-  Simulation &simulation;
+  Solver &simulation;
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *screen;
@@ -17,7 +17,7 @@ private:
   void render(SDL_Texture*);
 
 public:
-  explicit SdlEngine(Simulation &);
+  explicit SdlEngine(Solver &);
   ~SdlEngine();
   void run();
 };

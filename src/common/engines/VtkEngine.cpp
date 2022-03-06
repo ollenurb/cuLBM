@@ -5,7 +5,7 @@
 #include "VtkEngine.hpp"
 #include <cstdio>
 
-VtkEngine::VtkEngine(Simulation &s, unsigned int n_steps) : WIDTH(s.get_width()), HEIGHT(s.get_height()), STEPS(n_steps), simulation(s) {}
+VtkEngine::VtkEngine(Solver &s, unsigned int n_steps) : WIDTH(s.get_width()), HEIGHT(s.get_height()), STEPS(n_steps), simulation(s) {}
 
 VtkEngine::~VtkEngine() = default;
 
@@ -37,13 +37,13 @@ void VtkEngine::run() {
   }
 }
 
-void VtkEngine::write_data(FILE *fp, const D2Q9::Lattice* lattice) const {
+void VtkEngine::write_data(FILE *fp, Lattice* lattice) const {
   // Write velocity
   fprintf(fp,"POINT_DATA %d\n", WIDTH*HEIGHT);
   fprintf(fp, "VECTORS velocity float\n");
   for(int x = 0; x < WIDTH; x++) {
     for(int y = 0; y < HEIGHT; y++) {
-      const Vector2D<Real> current = lattice->u[x][y];
+      Vector2D<Real> current = lattice->u(x, y);
       fprintf(fp, "%f %f %f\n", current.x, current.y, 0.0);
     }
   }

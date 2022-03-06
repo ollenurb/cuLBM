@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Simulation.hpp"
+#include "../Solver.hpp"
 #include "../D2Q9.hpp"
 
 class VtkEngine {
@@ -12,14 +12,14 @@ private:
   const unsigned int WIDTH;
   const unsigned int HEIGHT;
   const unsigned int STEPS;
-  Simulation &simulation;
+  Solver &simulation;
 
   // VTK-related functions
   void write_header(FILE *) const;
-  void write_data(FILE *file, const D2Q9::Lattice* lattice) const;
+  void write_data(FILE *file, Lattice* lattice) const;
 
 public:
-  explicit VtkEngine(Simulation &, unsigned int);
+  explicit VtkEngine(Solver &, unsigned int);
   ~VtkEngine();
   void run();
 

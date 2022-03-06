@@ -15,8 +15,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/obj")
 # src/common/*.cuh src/gpu/*.cuh
 # src/gpu/*.cu
 
-file(GLOB HEADERS src/common/*.hpp src/common/engines/*.hpp src/cpu/*.hpp)
-file(GLOB SOURCES src/common/*.cpp src/common/engines/*.cpp src/cpu/*.cpp)
+file(GLOB HEADERS src/common/*.hpp src/common/engines/*.hpp src/cpu/*.hpp src/gpu/*.cuh)
+file(GLOB SOURCES src/common/*.cpp src/common/engines/*.cpp src/cpu/*.cpp src/gpu/*.cu)
 
 # +=============================================+
 # +========+ Setup libraries headers +==========+
