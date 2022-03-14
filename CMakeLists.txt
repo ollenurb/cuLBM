@@ -11,17 +11,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/obj")
 # +=============================================+
 # +====+ Setup Headers, Sources and macros +====+
 # +=============================================+
-# I removed temporarily cuda files
-# src/common/*.cuh src/gpu/*.cuh
-# src/gpu/*.cu
-
 file(GLOB HEADERS src/common/*.hpp src/common/engines/*.hpp src/cpu/*.hpp src/gpu/*.cuh)
 file(GLOB SOURCES src/common/*.cpp src/common/engines/*.cpp src/cpu/*.cpp src/gpu/*.cu)
 
 # +=============================================+
-# +========+ Setup libraries headers +==========+
+# +========+ Setup headers only libs +==========+
 # +=============================================+
-set(INCLUDE_HEADERS lib/CLI11.hpp)
+add_library(libs INTERFACE)
+target_include_directories(libs INTERFACE lib)
+
+#set(INCLUDE_HEADERS lib/cli/CLI11.hpp lib/inireader/INIReader.h)
 
 # +=============================================+
 # +=========+ Setup libraries targets +=========+
@@ -30,8 +29,8 @@ set(LIBRARY_NAME Engine)
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 
-add_library(${LIBRARY_NAME} STATIC ${INCLUDE_HEADERS} ${HEADERS} ${SOURCES})
-target_link_libraries(${LIBRARY_NAME} SDL2::SDL2 SDL2::SDL2main)
+add_library(${LIBRARY_NAME} STATIC ${HEADERS} ${SOURCES})
+target_link_libraries(${LIBRARY_NAME} SDL2::SDL2 SDL2::SDL2main libs)
 target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_11)
 set_target_properties(
         ${LIBRARY_NAME} PROPERTIES

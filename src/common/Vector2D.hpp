@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Defines.hpp"
+#include <cmath>
 
 /* 2 dimensional vector */
 template<typename T>

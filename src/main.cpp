@@ -1,9 +1,10 @@
 #include <chrono>
 #include <iostream>
-#include "../lib/CLI11.hpp"
+#include <cli/CLI11.hpp>
 #include "common/engines/SdlEngine.hpp"
 #include "common/engines/VtkEngine.hpp"
 #include "cpu/CpuSolver.hpp"
+//#include "gpu/GpuSolver.cuh"
 
 void run_benchmarks(Solver &simulation, unsigned int steps) {
   using std::chrono::high_resolution_clock;
@@ -33,7 +34,7 @@ int main(int argc, char **argv) {
 
   bool gpu_support = false;
   enum ProgramMode mode = REALTIME;
-  std::pair<unsigned, unsigned> dim(100, 100);
+  std::pair<unsigned, unsigned> dim(600, 300);
   unsigned int steps = 10000;
   app.add_option("--gpu", gpu_support, "Whether to use GPU acceleration or not (Default false)");
   app.add_option("--mode", mode,
@@ -49,7 +50,15 @@ int main(int argc, char **argv) {
             << " GPU acceleration enabled" << std::endl;
 
   Solver *simulation;
-  simulation = new CpuSolver(dim.first, dim.second);
+//  if(gpu_support) {
+//      simulation = new GpuSolver(dim.first, dim.second);
+//  } else {
+//      simulation = new CpuSolver(dim.first, dim.second);
+//  }
+  Configuration config;
+  config.load("../src/res/config.ini");
+
+  simulation = new CpuSolver(config, obstacle);
 
   switch (mode) {
     case BENCHMARK: {

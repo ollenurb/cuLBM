@@ -5,19 +5,18 @@
 
 class SdlEngine {
 private:
-  const unsigned int WIDTH;
-  const unsigned int HEIGHT;
-  bool running;
-  Solver &simulation;
-  SDL_Window *window;
-  SDL_Renderer *renderer;
-  SDL_Texture *screen;
+    Configuration config;
+    bool running;
+    Solver &simulation;
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    SDL_Texture *screen;
 
-  void process_events();
-  void render(SDL_Texture*);
+    void process_events();
+    void render(SDL_Texture *);
 
 public:
-  explicit SdlEngine(Solver &);
-  ~SdlEngine();
-  void run();
+    explicit SdlEngine(Solver &);
+    ~SdlEngine();
+    void run();
 };

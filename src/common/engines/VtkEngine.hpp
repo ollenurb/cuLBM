@@ -4,23 +4,21 @@
 
 #pragma once
 
-#include "../Solver.hpp"
 #include "../D2Q9.hpp"
+#include "../Solver.hpp"
 
 class VtkEngine {
 private:
-  const unsigned int WIDTH;
-  const unsigned int HEIGHT;
-  const unsigned int STEPS;
-  Solver &simulation;
+    Configuration config;
+    const unsigned int STEPS;
+    Solver &simulation;
 
-  // VTK-related functions
-  void write_header(FILE *) const;
-  void write_data(FILE *file, Lattice* lattice) const;
+    // VTK-related functions
+    void write_header(FILE *) const;
+    void write_data(FILE *file, Lattice<Host> *lattice);
 
 public:
-  explicit VtkEngine(Solver &, unsigned int);
-  ~VtkEngine();
-  void run();
-
+    explicit VtkEngine(Solver &, unsigned int);
+    ~VtkEngine();
+    void run();
 };

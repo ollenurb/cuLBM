@@ -1,24 +1,25 @@
 #pragma once
 
-#include "SDL.h"
+#include "Configuration.hpp"
 #include "D2Q9.hpp"
-#include "Lattice.hpp"
+#include "Array.hpp"
 
 class Solver {
 protected:
-  const unsigned int WIDTH;
-  const unsigned int HEIGHT;
+    Lattice<Host> lattice;
+    Array<bool, Host> obstacle;
 
 public:
-  Solver(unsigned int w, unsigned int h) : WIDTH(w), HEIGHT(h) {}
+    Configuration config;
 
-  virtual ~Solver() {}
+    Solver(Configuration config) : config(config) { }
 
-  virtual void step() = 0;
+    virtual ~Solver() {
+        lattice.free();
+        obstacle.free();
+    }
 
-  virtual Lattice *get_lattice() = 0;
+    virtual void step() = 0;
 
-  unsigned int get_width() const { return WIDTH; }
-
-  unsigned int get_height() const { return HEIGHT; }
+    virtual Lattice<Host> *get_lattice() = 0;
 };

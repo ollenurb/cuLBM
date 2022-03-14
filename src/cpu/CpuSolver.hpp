@@ -1,30 +1,27 @@
 #pragma once
 
-#include <vector>
-#include "../common/D2Q9.hpp"
 #include "../common/Solver.hpp"
-#include "CpuLattice.hpp"
 
 using namespace D2Q9;
 
 class CpuSolver : public Solver {
 private:
-  CpuLattice lattice;
-  CpuLattice lattice_t;
-  // TODO: Refactor
-  Vector2D<Real> initial_config_u;
-  Real initial_config_f[Q];
+    Lattice<Host> lattice_t;
+    LatticeNode initial_config;
 
-  void stream();
+    inline unsigned index(unsigned x, unsigned y) { return x + y; }
+    inline unsigned index(unsigned x, unsigned y, unsigned z) { return x + y + z; }
 
-  void collide();
+    void stream();
 
-  void bounce();
+    void collide();
+
+    void bounce();
 
 public:
-  CpuSolver(unsigned int, unsigned int);
+    CpuSolver(Configuration config);
 
-  virtual Lattice * get_lattice() override;
+    virtual Lattice<Host> *get_lattice() override;
 
-  void step() override;
+    void step() override;
 };

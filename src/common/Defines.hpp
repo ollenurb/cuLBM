@@ -1,7 +1,6 @@
 //
 // Created by matteo on 7/20/21.
 //
-
 #pragma once
 
 // Select precision
@@ -20,11 +19,10 @@ typedef float Real;
   #define CONSTANT
 #endif
 
-/* Defines the type of allocation of a lattice. Can be either Device or Host */
-struct Device {
-  static const unsigned id = 1;
+struct Host {
+    const unsigned id = 0;
 };
 
-struct Host {
-  static const unsigned id = 2;
+struct Device {
+    const unsigned id = 1;
 };
