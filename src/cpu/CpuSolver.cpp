@@ -24,7 +24,7 @@ CpuSolver::CpuSolver(Parameters params) : Solver(params) {
                 lattice.f(x, y, i) = lattice_t.f(x, y, i) = equilibrium_configuration.f[i];
             }
 
-            /* TODO: To remove, its just to put a circle in the center */
+            /* TODO: To remove, its just to put a circle at the center */
             unsigned rel_x = params.width / 2 - x;
             unsigned rel_y = params.height / 2 - y;
             double r = sqrt(rel_x * rel_x + rel_y * rel_y);
@@ -107,7 +107,7 @@ void CpuSolver::collide() {
                 e_dp_u = new_u * e[i];
                 f_eq = (total_density * W[i]) * (1 + (3 * e_dp_u) + (static_cast<Real>(4.5) * (e_dp_u * e_dp_u)) -
                                                  (static_cast<Real>(1.5) * new_u.mod_sqr()));
-                lattice.f(x, y, i) += OMEGA * (f_eq - lattice.f(x, y, i));
+                lattice.f(x, y, i) += params.omega * (f_eq - lattice.f(x, y, i));
             }
             lattice.u(x, y) = new_u;
         }
