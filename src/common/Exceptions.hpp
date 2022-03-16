@@ -1,7 +1,9 @@
 //
 // Created by matteo on 3/3/22.
 //
-#pragma once
+#ifndef LBM_EXCEPTIONS_HPP
+#define LBM_EXCEPTIONS_HPP
+
 #include <exception>
 #include <stdexcept>
 
@@ -19,3 +21,5 @@ class UnsupportedDeviceTypeException : std::runtime_error {
 public:
     UnsupportedDeviceTypeException(std::string const &what) : std::runtime_error(what.c_str()) {}
 };
+
+#endif

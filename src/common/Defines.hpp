@@ -1,7 +1,8 @@
 //
 // Created by matteo on 7/20/21.
 //
-#pragma once
+#ifndef LBM_DEFINES_HPP
+#define LBM_DEFINES_HPP
 
 // Select precision
 typedef float Real;
@@ -19,10 +20,8 @@ typedef float Real;
   #define CONSTANT
 #endif
 
-struct Host {
-    const unsigned id = 0;
-};
+/* Define allocation types */
+struct Host { };
+struct Device { };
 
-struct Device {
-    const unsigned id = 1;
-};
+#endif

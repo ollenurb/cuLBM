@@ -1,9 +1,9 @@
 //
 // Created by matteo on 7/20/21.
 //
-#pragma once
+#ifndef LBM_D2Q9_HPP
+#define LBM_D2Q9_HPP
 
-#include "Array.hpp"
 #include "Vector2D.hpp"
 #define Q 9
 #define WEIGHTS \
@@ -26,50 +26,7 @@ namespace D2Q9 {
     /* Weights associated to each direction */
     const Real W[Q] = WEIGHTS;
 
-    /* Define a LatticeNode */
-    struct LatticeNode {
-        Real f[Q];
-        Vector2D<Real> u;
-    };
 
-    /* Multidimensional vectors are going to be stored as 1D array so that memory access is improved */
-    template<typename Allocation>
-    struct Lattice {};
-
-    template<>
-    struct Lattice<Host> {
-        Array<Real, Host> f;
-        Array<Vector2D<Real>, Host> u;
-
-        void init(unsigned w, unsigned h) {
-            f.init(w * h * Q);
-            u.init(w * h);
-        }
-
-        void free() {
-            f.free();
-            u.free();
-        }
-    };
-
-#ifdef __NVCC__
-    template<>
-    struct Lattice<Device> {
-        Array<Real, Device> f;
-        Array<Vector2D<Real>, Device> u;
-
-        void init(unsigned w, unsigned h) {
-            f.init(w * h * Q);
-            u.init(w * h);
-        }
-
-        void free() {
-            f.free();
-            u.free();
-        }
-
-    };
-#endif
-
-    /* Bitmap for obstacles */
 } /* namespace D2Q9 */
+
+#endif

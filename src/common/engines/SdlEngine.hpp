@@ -1,11 +1,12 @@
-#pragma once
+#ifndef LBM_SDL_ENGINE_HPP
+#define LBM_SDL_ENGINE_HPP
 
 #include "../Solver.hpp"
 #include "SDL.h"
 
 class SdlEngine {
 private:
-    Configuration config;
+    Parameters params;
     bool running;
     Solver &simulation;
     SDL_Window *window;
@@ -20,3 +21,5 @@ public:
     ~SdlEngine();
     void run();
 };
+
+#endif

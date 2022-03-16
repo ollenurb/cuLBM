@@ -51,10 +51,10 @@ unsigned int HSBtoRGB(float hue, float saturation, float brightness) {
 }
 
 SdlEngine::SdlEngine(Solver &r) : simulation(r) {
-    config = r.config;
+    params = r.params;
     running = false;
-    SDL_CreateWindowAndRenderer(config.width, config.height, 0, &window, &renderer);
-    screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, config.width, config.height);
+    SDL_CreateWindowAndRenderer(params.width, params.height, 0, &window, &renderer);
+    screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, params.width, params.height);
 }
 
 SdlEngine::~SdlEngine() = default;
@@ -96,7 +96,8 @@ void SdlEngine::process_events() {
 }
 
 void SdlEngine::render(SDL_Texture *) {
-    Lattice<Host> *lattice = simulation.get_lattice();
+    Lattice<Host> lattice = simulation.get_lattice();
+    Bitmap<Host> obstacle = simulation.get_obstacle();
     void *pixels;
     int pitch;
     Uint32 *dest;
@@ -106,11 +107,11 @@ void SdlEngine::render(SDL_Texture *) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't lock texture: %s\n", SDL_GetError());
     }
 
-    for (int y = 0; y < config.width; y++) {
+    for (int y = 0; y < params.height; y++) {
         dest = (Uint32 *) ((Uint8 *) pixels + y * pitch);
-        for (int x = 0; x < config.height; x++) {
-            b = std::min(lattice->u[config.index(x, y)].modulus() * 3, static_cast<Real>(1));
-            if (simulation.config.has_obstacle(x, y)) {
+        for (int x = 0; x < params.width; x++) {
+            b = std::min(lattice.u(x, y).modulus() * 3, static_cast<Real>(1));
+            if (obstacle(x, y)) {
                 *(dest + x) = ((0xFF000000 | (112 << 16) | (0 << 8) | 0));
             } else {
                 *(dest + x) = HSBtoRGB(0.5, 1, b);

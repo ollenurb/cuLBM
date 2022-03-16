@@ -1,7 +1,8 @@
 //
 // Created by matteo on 7/18/21.
 //
-#pragma once
+#ifndef LBM_VECTOR2D_HPP
+#define LBM_VECTOR2D_HPP
 
 #include "Defines.hpp"
 #include <cmath>
@@ -39,3 +40,5 @@ HOST_DEVICE
 inline T Vector2D<T>::operator*(const struct Vector2D<U> &v) const {
   return (v.x * x) + (v.y * y);
 }
+
+#endif

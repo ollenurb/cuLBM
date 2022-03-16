@@ -1,33 +1,31 @@
 //
 // Created by matteo on 7/18/21.
 //
-#pragma once
+#ifndef LBM_GPU_SOLVER_CUH
+#define LBM_GPU_SOLVER_CUH
 
 #include "../common/Solver.hpp"
 #include "../common/Defines.hpp"
-#include "../common/D2Q9.hpp"
-
-using namespace D2Q9;
 
 class GpuSolver : public Solver {
 private:
   /* In this case we need more variables to hold both the host lattice and device lattice GPU references */
   Lattice<Device> device_lattice;
   Lattice<Device> device_lattice_t;
-  LatticeNode equilibrium_configuration;
-
+  Bitmap<Device> device_obstacle;
 
   int get_device();
 
 public:
-  GpuSolver(unsigned w, unsigned h);
+  GpuSolver(Parameters params);
 
   ~GpuSolver();
 
   /* Perform a simulation step: f(t) -> f(t + dt) */
   void step() override;
 
-  Lattice<Host> *get_lattice() override;
+  Lattice<Host>& get_lattice() override;
 
 };
 
+#endif

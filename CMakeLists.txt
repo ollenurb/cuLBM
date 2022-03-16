@@ -34,7 +34,7 @@ target_link_libraries(${LIBRARY_NAME} SDL2::SDL2 SDL2::SDL2main libs)
 target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_11)
 set_target_properties(
         ${LIBRARY_NAME} PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_SEPARABLE_COMPILATION OFF
         CUDA_ARCHITECTURES 50 75 80
 )
 
