@@ -12,6 +12,9 @@
 dim3 dim_block;
 dim3 dim_grid;
 
+/* +=============================================+ */
+/* +=============+ Device Specific +=============+ */
+/* +=============================================+ */
 namespace device {
     CONSTANT Parameters params;
     CONSTANT LatticeNode equilibrium_config;

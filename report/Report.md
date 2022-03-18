@@ -393,7 +393,7 @@ introdurre troppo overhead dato dai trasferimenti della memoria.
     \end{algorithmic}
 \end{algorithm}
 
-Come detto in precedenza, la parallelizzazione dei singoli passi, consiste
+Come detto in precedenza, la parallelizzazione dei singoli passi consiste
 nell'eliminazione dei due cicli for dell'implementazione sequenziale necessari a
 scorrere l'intero spazio bidimensionale della simulazione.
 Grazie al modello di programmazione scelto, tale parallelizzazione e' molto
@@ -403,12 +403,21 @@ sotto-passi sono stati parallelizzati seguendo lo stesso principio, e' stato
 riportato solo il passo di collisione.
 
 # Risultati e benchmarks
-Per poter eliminare ogni interferenza dovuta a tempi di esecuzione sincroni,
-ogni test e' stato effettuato evitando di eseguire il passo di scrittura dello
-stato all'interno dei files per la visualizzazione. In questo modo, i tempi di
-esecuzione comprendono solo i tempi di computazione e di trasferimento in
-memoria (nel caso dell'implementazione parallela, anche dei tempi di
-trasferimento dati *device-host*).
+Per valutare le performance delle implementazioni si e' scelto un problema
+specifico di fluidodinamica, che consiste nel simulare un'ipotetica galleria
+del vento. La geometria del problema e' data da uno spazio didimensioni $w
+\times w/2$, al cui centro e' posto un'oggetto sferico. La figura [..] riassume
+il problema, in cui il fluido (in questo caso un *gas*) si muove da sinistra
+verso destra, parallelamente all'asse $x$, per cui ogni nodo del lattice avra'
+$\vec{u} = \langle 1, 0 \rangle$.
+
+![Geometria del problema\label{figGeometry}](img/problem_geometry.png)
+
+Ogni simulazione consiste nell'esecuzione 1000 steps del solver. Al termine,
+viene calcolato il tempo di esecuzione e un'altra misura, chiamata LUPS
+(*Lattice Updates Per Seconds*), che indica il numero di nodi al secondo in cui
+viene effettuato un intero step di simulazione.
+
 
 # Conclusioni
 In questa sezione verranno messe le conclusioni tratte dagli esperimenti

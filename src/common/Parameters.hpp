@@ -12,11 +12,24 @@
 using namespace D2Q9;
 
 #define SECTION "parameters"
+#define STR_REALTIME "realtime"
+#define STR_PARAVIEW "paraview"
+#define STR_BENCHMARK "benchmark"
+
+/* Define the possible types of the simulation */
+enum SimulationType {
+    BENCHMARK,
+    REALTIME,
+    PARAVIEW
+};
 
 struct Parameters {
     unsigned width, height;
     Vector2D<Real> velocity;
     Real omega;
+    SimulationType type;
+    unsigned steps;
+    bool gpu;
 };
 
 Parameters load_parameters(std::string filename);
