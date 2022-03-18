@@ -1,0 +1,27 @@
+#ifndef LBM_CPU_SOLVER_HPP
+#define LBM_CPU_SOLVER_HPP
+
+#include "../common/Solver.hpp"
+
+using namespace D2Q9;
+
+class CpuSolver : public Solver {
+private:
+    Lattice<Host> lattice_t;
+
+    void stream();
+
+    void collide();
+
+    void bounce();
+
+public:
+    CpuSolver(Parameters params);
+    ~CpuSolver() { free_lattice(lattice_t); }
+
+    virtual Lattice<Host>& get_lattice() override;
+
+    void step() override;
+};
+
+#endif

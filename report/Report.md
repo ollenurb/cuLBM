@@ -410,7 +410,7 @@ esecuzione comprendono solo i tempi di computazione e di trasferimento in
 memoria (nel caso dell'implementazione parallela, anche dei tempi di
 trasferimento dati *device-host*).
 
-
 # Conclusioni
 In questa sezione verranno messe le conclusioni tratte dagli esperimenti
+[@LBMRepo]
 
