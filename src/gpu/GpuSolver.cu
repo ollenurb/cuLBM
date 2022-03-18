@@ -19,7 +19,7 @@ namespace device {
     CONSTANT Real W[Q];
 }// namespace device
 
-__global__ void init_kernel(Lattice<Device> lattice, Lattice<Device> lattice_t, Bitmap<Device> obstacle) {
+__global__ void init_kernel(Lattice<Device> lattice, Lattice<Device> lattice_t) {
     unsigned x_i = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -30,25 +30,6 @@ __global__ void init_kernel(Lattice<Device> lattice, Lattice<Device> lattice_t, 
     for(int i = 0; i < Q; i++) {
         lattice.f(x_i, y_i, i) = lattice_t.f(x_i, y_i, i) = device::equilibrium_config.f[i];
     }
-
-    /*
-    ** TODO: TO REMOVE
-    ** Put a circle at the center of the simulation
-    */
-    unsigned rel_x = device::params.width / 2 - x_i;
-    unsigned rel_y = device::params.height / 2 - y_i;
-    double r = sqrt(static_cast<float>(rel_x * rel_x + rel_y * rel_y));
-
-    if (r < min(device::params.width, device::params.height) * 0.05) {
-        obstacle(x_i, y_i) = true;
-        lattice.u(x_i, y_i) = lattice_t.u(x_i, y_i) = {0, 0};
-
-#pragma unroll
-        for (int i = 0; i < Q; i++) {
-            lattice.f(x_i, y_i, i) = lattice_t.f(x_i, y_i, i) = 0;
-        }
-    }
-    /* End todo */
 }
 
 __global__ void stream_kernel(Lattice<Device> lattice, Lattice<Device> lattice_t) {
@@ -108,7 +89,7 @@ __global__ void collide_kernel(Lattice<Device> lattice, Bitmap<Device> obstacle)
         for (int i = 0; i < Q; i++) {
             e_dp_u = new_u * device::e[i];
             f_eq = (rho * device::W[i]) * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * new_u.mod_sqr()));
-            lattice.f(x_i, y_i, i) += D2Q9::OMEGA * (f_eq - lattice.f(x_i, y_i, i));
+            lattice.f(x_i, y_i, i) += device::params.omega * (f_eq - lattice.f(x_i, y_i, i));
         }
         lattice.u(x_i, y_i) = new_u;
     }
@@ -119,7 +100,7 @@ __global__ void bounce_kernel(Lattice<Device> lattice_t, Bitmap<Device> obstacle
     unsigned y_i = blockIdx.y * blockDim.y + threadIdx.y;
 
     /* Sadly, lots of threads are going to diverge here */
-    if (!obstacle(x_i, y_i)) {
+    if (obstacle(x_i, y_i)) {
         lattice_t.f((x_i + 1), y_i, 1) = lattice_t.f(x_i, y_i, 3);
         lattice_t.f(x_i, (y_i + 1), 2) = lattice_t.f(x_i, y_i, 4);
         lattice_t.f((x_i - 1), y_i, 3) = lattice_t.f(x_i, y_i, 1);
@@ -140,11 +121,8 @@ __global__ void bounce_kernel(Lattice<Device> lattice_t, Bitmap<Device> obstacle
 /* +=============================================+ */
 void GpuSolver::step() {
     collide_kernel<<<dim_grid, dim_block>>>(device_lattice, device_obstacle);
-    cudaDeviceSynchronize();
     stream_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
-    cudaDeviceSynchronize();
     bounce_kernel<<<dim_grid, dim_block>>>(device_lattice_t, device_obstacle);
-    cudaDeviceSynchronize();
     /* Swap device pointers */
     std::swap(device_lattice_t, device_lattice);
 }
@@ -165,12 +143,14 @@ GpuSolver::GpuSolver(Parameters params) : Solver(params) {
 
     /* Compute grid and block size */
     dim_block = dim3(BLOCK_DIM, BLOCK_DIM);
-    dim_grid = dim3((params.width + dim_block.x - 1) / dim_block.x, (params.height + dim_block.y - 1) / dim_block.y);
+    dim_grid = dim3((params.width+dim_block.x-1)/dim_block.x, (params.height+dim_block.y-1)/dim_block.y);
 
+
+    /* TODO: Refactor into compute_equilibrium(...);*/
     /* Compute equilibrium f for the initial configuration */
     Real e_dp_u;
     LatticeNode tmp_init_conf;
-    tmp_init_conf.u = D2Q9::VELOCITY;
+    tmp_init_conf.u = params.velocity;
     /* Assign each lattice with the equilibrium f */
 #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -178,9 +158,15 @@ GpuSolver::GpuSolver(Parameters params) : Solver(params) {
         tmp_init_conf.f[i] = D2Q9::W[i] * (1 + (3 * e_dp_u) + (4.5f * (e_dp_u * e_dp_u)) - (1.5f * tmp_init_conf.u.mod_sqr()));
     }
 
+    /* Put a circle at the center, then synchronize with device */
+    center_circle(obstacle);
+    host_to_device(obstacle, device_obstacle);
+
     cudaMemcpyToSymbol(device::equilibrium_config, &tmp_init_conf, sizeof(LatticeNode));
-    init_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t, device_obstacle);
+    init_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
     cudaDeviceSynchronize();
+    device_to_host(device_lattice.f, lattice.f);
+    device_to_host(device_lattice.u, lattice.u);
 }
 
 /*

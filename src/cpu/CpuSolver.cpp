@@ -23,20 +23,10 @@ CpuSolver::CpuSolver(Parameters params) : Solver(params) {
             for (int i = 0; i < Q; i++) {
                 lattice.f(x, y, i) = lattice_t.f(x, y, i) = equilibrium_configuration.f[i];
             }
-
-            /* TODO: To remove, its just to put a circle at the center */
-            unsigned rel_x = params.width / 2 - x;
-            unsigned rel_y = params.height / 2 - y;
-            double r = sqrt(rel_x * rel_x + rel_y * rel_y);
-            if (r < std::min(params.width, params.height) * 0.2) {
-                obstacle(x, y) = true;
-                lattice.u(x, y) = lattice_t.u(x, y) = {0, 0};
-                for (int i = 0; i < Q; i++) {
-                    lattice.f(x, y, i) = lattice_t.f(x, y, i) = 0;
-                }
-            }
         }
     }
+
+    center_circle(obstacle);
 }
 
 inline unsigned clamp(unsigned val, unsigned low, unsigned high) {

@@ -4,6 +4,7 @@
 #include "D2Q9.hpp"
 #include "Lattice.hpp"
 #include "Parameters.hpp"
+#include "Bitmap.hpp"
 
 class Solver {
 protected:

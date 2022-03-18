@@ -1,7 +1,7 @@
 #include "SdlEngine.hpp"
 #include <iostream>
 
-#define UPDATE_STEPS 20
+#define UPDATE_STEPS 120
 
 /* Utility function used to render */
 unsigned int HSBtoRGB(float hue, float saturation, float brightness) {

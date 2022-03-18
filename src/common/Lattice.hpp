@@ -29,7 +29,5 @@ void free_lattice(Lattice<Allocation>& lattice) {
     free_array(lattice.f);
 }
 
-template<typename Allocation>
-using Bitmap = Array<bool, 2, Allocation>;
 
 #endif
