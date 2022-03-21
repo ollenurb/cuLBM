@@ -24,7 +24,7 @@ target_include_directories(libs INTERFACE lib)
 # +=========+ Setup libraries targets +=========+
 # +=============================================+
 set(LIBRARY_NAME Engine)
-#find_package(SDL2)
+find_package(SDL2)
 
 IF(SDL2_FOUND)
     include_directories(${SDL2_INCLUDE_DIRS})

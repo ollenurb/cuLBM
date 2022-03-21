@@ -124,8 +124,11 @@ __global__ void bounce_kernel(Lattice<Device> lattice_t, Bitmap<Device> obstacle
 /* +=============================================+ */
 void GpuSolver::step() {
     collide_kernel<<<dim_grid, dim_block>>>(device_lattice, device_obstacle);
+    cudaDeviceSynchronize();
     stream_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
+    cudaDeviceSynchronize();
     bounce_kernel<<<dim_grid, dim_block>>>(device_lattice_t, device_obstacle);
+    cudaDeviceSynchronize();
     /* Swap device pointers */
     std::swap(device_lattice_t, device_lattice);
 }
