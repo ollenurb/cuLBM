@@ -3,7 +3,7 @@
 //
 
 #include "Bitmap.hpp"
-#include <cmath>
+#include <algorithm>
 
 void center_circle(Bitmap<Host> &bitmap) {
     for (int x = 0; x < bitmap.w; x++) {
