@@ -1,4 +1,6 @@
+#ifdef SDL2
 #include "common/engines/SdlEngine.hpp"
+#endif
 #include "cpu/CpuSolver.hpp"
 #include "gpu/GpuSolver.cuh"
 #include <chrono>
@@ -45,9 +47,13 @@ int main() {
             break;
 
         case REALTIME: {
+#ifdef SDL2
             std::cout << "Running a realtime simulation" << std::endl;
             SdlEngine engine(*solver);
             engine.run();
+#else
+            std::cerr << "Realtime simulation is not supported since SDL2 wasn't found during compilation" << std::endl;
+#endif
         } break;
 
         default:
