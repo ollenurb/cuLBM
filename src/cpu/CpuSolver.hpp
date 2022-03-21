@@ -13,7 +13,7 @@ private:
 
     void collide();
 
-    void bounce();
+    void bounce(unsigned x, unsigned y);
 
 public:
     CpuSolver(Parameters params);

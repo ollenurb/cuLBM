@@ -33,16 +33,22 @@ inline unsigned clamp(unsigned val, unsigned low, unsigned high) {
     return std::min(std::max(val, low), high);
 }
 
+/*
+ * Stream and bounce inside the same step to speed up computations
+  */
 void CpuSolver::stream() {
-    /* Move the fluid to neighbouring sites */
-    unsigned x_index, y_index;
-
     for (int x = 0; x < params.width; x++) {
         for (int y = 0; y < params.height; y++) {
-            for (int i = 0; i < Q; i++) {
-                x_index = clamp(x + e[i].x, 0, params.width - 1);
-                y_index = clamp(y + e[i].y, 0, params.height - 1);
-                lattice_t.f(x_index, y_index, i) = lattice.f(x, y, i);
+            if (obstacle(x, y)) {
+                bounce(x, y);
+            } else {
+                /* Move the fluid to neighbouring sites */
+                for (int i = 0; i < Q; i++) {
+                    unsigned x_index, y_index;
+                    x_index = clamp(x + e[i].x, 0, params.width - 1);
+                    y_index = clamp(y + e[i].y, 0, params.height - 1);
+                    lattice_t.f(x_index, y_index, i) = lattice.f(x, y, i);
+                }
             }
         }
     }
@@ -52,7 +58,6 @@ void CpuSolver::stream() {
    * densities for some fixed f and velocity"
    * (Schroeder - CpuSimulation-Boltzmann Fluid Dynamics)
    */
-    // TODO: Can be changed
     for (int x = 0; x < params.width; x++) {
         lattice_t.u(x, params.height - 1) = lattice_t.u(x, 0) = equilibrium_configuration.u;
         for (int i = 0; i < Q; i++) {
@@ -105,31 +110,25 @@ void CpuSolver::collide() {
 }
 
 // IMPROVEMENT: You can store indexes on two separate arrays, so that you can later apply changes in a for loop
-void CpuSolver::bounce() {
-    for (int x = 1; x < params.width; x++) {
-        for (int y = 1; y < params.height; y++) {
-            if (obstacle(x, y)) {
-                lattice_t.f(x + 1, y, 1) = lattice_t.f(x, y, 3);
-                lattice_t.f(x, y + 1, 2) = lattice_t.f(x, y, 4);
-                lattice_t.f(x - 1, y, 3) = lattice_t.f(x, y, 1);
-                lattice_t.f(x, y - 1, 4) = lattice_t.f(x, y, 2);
-                lattice_t.f(x + 1, y + 1, 5) = lattice_t.f(x, y, 7);
-                lattice_t.f(x - 1, y + 1, 6) = lattice_t.f(x, y, 8);
-                lattice_t.f(x - 1, y - 1, 7) = lattice_t.f(x, y, 5);
-                lattice_t.f(x + 1, y - 1, 8) = lattice_t.f(x, y, 6);
+void CpuSolver::bounce(unsigned x, unsigned y) {
+    lattice_t.f(x + 1, y, 1) = lattice_t.f(x, y, 3);
+    lattice_t.f(x, y + 1, 2) = lattice_t.f(x, y, 4);
+    lattice_t.f(x - 1, y, 3) = lattice_t.f(x, y, 1);
+    lattice_t.f(x, y - 1, 4) = lattice_t.f(x, y, 2);
+    lattice_t.f(x + 1, y + 1, 5) = lattice_t.f(x, y, 7);
+    lattice_t.f(x - 1, y + 1, 6) = lattice_t.f(x, y, 8);
+    lattice_t.f(x - 1, y - 1, 7) = lattice_t.f(x, y, 5);
+    lattice_t.f(x + 1, y - 1, 8) = lattice_t.f(x, y, 6);
 
-                for (int i = 1; i < Q; i++) {
-                    lattice_t.f(x, y, i) = 0;
-                }
-            }
-        }
+    for (int i = 1; i < Q; i++) {
+        lattice_t.f(x, y, i) = 0;
     }
 }
 
 void CpuSolver::step() {
     collide();
     stream();
-    bounce();
+//    bounce();
     std::swap(lattice, lattice_t);
 }
 
