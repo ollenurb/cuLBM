@@ -10,23 +10,26 @@
  *  Run the solver for a given number of steps
  *  Returns the number of Lattice Updates Per Seconds
  */
-float run_benchmark(Solver &solver, Parameters params) {
+void run_benchmark(Solver &solver, Parameters params) {
     using std::chrono::duration;
     using std::chrono::duration_cast;
     using std::chrono::high_resolution_clock;
     using std::chrono::milliseconds;
+    using std::chrono::seconds;
 
     unsigned long long total_updates = params.width * params.height * params.steps;
+    unsigned steps = params.steps;
     auto t0 = high_resolution_clock::now();
-    while (params.steps > 0) {
+    while (steps > 0) {
         solver.step();
-        params.steps--;
-        solver.get_lattice();
+        steps--;
     }
+    solver.get_lattice();
     auto t1 = high_resolution_clock::now();
     /* Round milliseconds as ints */
     auto elapsed = duration_cast<milliseconds>(t1 - t0); // elapsed time
-    return total_updates * 1000 / elapsed.count();
+    float lups = total_updates * 1000 / elapsed.count();
+    printf("LUPS: %f, Elapsed: %d,  Steps: %d\n", lups, elapsed.count(), params.steps);
 }
 
 int main() {
@@ -39,8 +42,7 @@ int main() {
     switch (params.type) {
         case BENCHMARK: {
             std::cout << "Running a benchmark" << std::endl;
-            float lattice_updates_per_seconds = run_benchmark(*solver, params);
-            printf("Got %.f LUPS", lattice_updates_per_seconds);
+            run_benchmark(*solver, params);
         } break;
 
         case PARAVIEW:
