@@ -1,10 +1,10 @@
-# cuLBM: A GPU accellerated Lattice Boltzmann FLuid solver
+# cuLBM: A GPU accellerated Lattice Boltzmann Fluid solver
 
 <p align="center">
   <img src="https://github.com/ollenurb/cuLBM/blob/main/img/Peek%202022-03-18%2009-01.gif" />
 </p>
 
-cuLBM was developed as a final project of a graduate (master) course. For this reason, it is not appropriate for serious scientific modeling or simulation.
+cuLBM was developed as a final project of a graduate (master) [course](http://magistrale.educ.di.unito.it/index.php/offerta-formativa/insegnamenti/elenco-completo/elenco-completo/scheda-insegnamento?cod=MFN0795&codA=&year=2020&orienta=YXFH). For this reason, it is not appropriate for serious scientific modeling or simulation.
 
 cuLBM provides two implementations (one with GPU support and one without) of a 2D fluid solver based on the [Lattice-Boltzmann method](https://en.wikipedia.org/wiki/Lattice_Boltzmann_methods). The goal of the project is to apply parallelization techniques discussed in the course, and to empirically evaluate speedups.
 
