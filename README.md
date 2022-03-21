@@ -23,3 +23,6 @@ The configuration file `config.ini` is also used to set up other parameters of t
 * `velocity`: fluid velocity on each lattice site at `t=0`
 * `viscosity`: fluid viscosity
 * `gpu`: set if the simulation must be run with hardware acceleration
+
+## Report
+The final report (written in Italian) can be found inside the `report` directory. To generate the `pdf`, install `pandoc` and run `make`. 
