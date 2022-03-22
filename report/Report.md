@@ -17,32 +17,6 @@ citeproc: true
 csl: /home/matteo/.pandoc/csls/ieee.csl
 fontsize: 11pt
 geometry: "left=2cm,right=2cm,top=2cm,bottom=2cm"
-header-includes: |
-    \usepackage{algorithm}
-    \usepackage{algpseudocode}
-    \setlength{\parskip}{0.5em}
-    \setlength{\columnsep}{18pt}
-    \makeatletter
-    \def\@maketitle{%
-      \newpage
-      \null
-      \begin{center}%
-      \let \footnote \thanks
-        {\LARGE \textbf{\@title} \par}%
-        \vskip 1em%
-        {\large Relazione di Laboratorio - Sistemi di Calcolo Paralleli e Distribuiti \par}%
-        \vskip 1em%
-        {\large
-          \lineskip .5em%
-          \begin{tabular}[t]{c}%
-            \@author
-          \end{tabular}\par}%
-        \vskip 1em%
-        {\large \@date}%
-      \end{center}%
-      \par
-      \vskip 1.5em}
-    \makeatother
 ---
 
 # Introduzione
@@ -276,9 +250,13 @@ avrebbero diversamente appesantito il programma.
 \end{algorithm}
 
 
-Per poter visualizzare la simulazione, lo stato viene poi scritto all'interno di
-un file VTK in modo da poter essere usufruito dal software di visualizzazione
-Paraview\textsuperscript{\textcopyright}.
+Dopo aver letto i dati iniziali del problema da un file di configurazione, il
+solver esegue il numero specificato di passi di simulazione, per poi scrivere lo
+stato all'interno di un file VTK, in modo da poter essere usufruito dal software
+di visualizzazione Paraview\textsuperscript{\textcopyright}.
+Alternativamente e' possibile eseguire il programma in una modalita' di
+visualizzazione *realtime* della simulazione, in cui ad ogni step del solver
+viene visualizzato lo stato tramite SDL2 [..].
 
 ## Implementazione del Modello
 Il modello `D2Q9` e' implementabile in due modi differenti. Il primo
@@ -325,6 +303,7 @@ memoria, anche se i rimanenti campi non sono necessari.
 Infine, la seconda rappresentazione e' anche particolarmente adatta ad
 implementazioni su GPU, poiche' favorisce l'accesso *coalescente* dei threads
 alla memoria.
+
 
 # Implementazione Parallela
 Per la parallelizzazione del solver, si e' seguita la metodologia descritta in
@@ -405,7 +384,7 @@ riportato solo il passo di collisione.
 # Risultati e benchmarks
 Per valutare le performance delle implementazioni si e' scelto un problema
 specifico di fluidodinamica, che consiste nel simulare un'ipotetica galleria
-del vento. La geometria del problema e' data da uno spazio didimensioni $w
+del vento. La geometria del problema e' data da uno spazio di dimensioni $w
 \times w/2$, al cui centro e' posto un'oggetto sferico. La figura [..] riassume
 il problema, in cui il fluido (in questo caso un *gas*) si muove da sinistra
 verso destra, parallelamente all'asse $x$, per cui ogni nodo del lattice avra'
@@ -413,11 +392,58 @@ $\vec{u} = \langle 1, 0 \rangle$.
 
 ![Geometria del problema\label{figGeometry}](img/problem_geometry.png)
 
-Ogni simulazione consiste nell'esecuzione 1000 steps del solver. Al termine,
-viene calcolato il tempo di esecuzione e un'altra misura, chiamata LUPS
-(*Lattice Updates Per Seconds*), che indica il numero di nodi al secondo in cui
-viene effettuato un intero step di simulazione.
+Ai fini della valutazione, si e' sviluppata un'apposita suite di benchmarking,
+che si limita a calcolare il tempo di esecuzione dei passi di simulazione
+indicati nel file di configurazione.
+Per effettuare il benchmarking sono state utizzate due macchine: una dotata di
+GPU NVIDIA RTX 2070 e una GPU NVIDIA T4 (messa a disposizione dal dipartimento).
+Sono stati effettuati poi diversi test con dimensioni del problema differenti.
 
+\begin{tikzpicture}
+    \begin{axis}[
+        xlabel=Nr. Nodes,
+        ylabel=Time (ms),
+        ymode=log,
+        xmode=log,
+        log basis x={2},
+        log basis y={10}
+]
+        % CPU
+        \addplot[mark=*,blue] coordinates {
+            (8192,546)
+            (32768,3084)
+            (131072,20192)
+            (524288,119875)
+            (1097152,735681)
+        };
+        % GPU
+        \addplot[mark=*,red] coordinates {
+            (8192,22)
+            (32768,30)
+            (131072,81)
+            (524288,262)
+            (1097152,932)
+        };
+    \end{axis}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+    \begin{axis}[
+        xlabel=Threads,
+        ylabel=Speedup,
+        xmode=log,
+        log basis x={2},
+]
+        % Speedup Medio
+        \addplot[mark=*,blue] coordinates {
+            (8192,24.82)
+            (32768,102.8)
+            (131072,249.28)
+            (524288,457.53)
+            (1097152,790.35)
+        };
+    \end{axis}
+\end{tikzpicture}
 
 # Conclusioni
 In questa sezione verranno messe le conclusioni tratte dagli esperimenti

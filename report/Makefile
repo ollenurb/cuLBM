@@ -1,2 +1,5 @@
 report:
-	pandoc --citeproc -o Report.pdf Report.md
+	pandoc --include-in-header=Preamble.tex\
+       --citeproc\
+       -o Report.pdf\
+       Report.md
