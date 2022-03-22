@@ -128,7 +128,6 @@ void CpuSolver::bounce(unsigned x, unsigned y) {
 void CpuSolver::step() {
     collide();
     stream();
-//    bounce();
     std::swap(lattice, lattice_t);
 }
 
