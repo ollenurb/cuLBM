@@ -4,6 +4,7 @@
 
 #include "Bitmap.hpp"
 #include <algorithm>
+#include <cmath>
 
 void center_circle(Bitmap<Host> &bitmap) {
     for (int x = 0; x < bitmap.w; x++) {

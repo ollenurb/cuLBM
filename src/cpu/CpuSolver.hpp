@@ -13,6 +13,11 @@ private:
 
     void collide();
 
+
+    void stream(unsigned x, unsigned y);
+
+    void collide(unsigned x, unsigned y);
+
     void bounce(unsigned x, unsigned y);
 
 public:
