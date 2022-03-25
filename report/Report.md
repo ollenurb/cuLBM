@@ -39,10 +39,10 @@ anche delle equazioni di Navier Stokes: un insieme di equazioni parziali
 differenziali che descrivono il moto dei fluidi nel tempo. Simulare un fluido
 richiede essenzialmente di ottenere delle soluzioni (anche approssimate) di queste
 equazioni, spesso discretizzate.
-Da questo punto di vista, simulare un fluido richiede di calcolare ad ogni passo
-$t$ lo stato successivo al tempo $t + \Delta t$, in cui lo stato del fluido e'
-descritto in termini di due quantita': la sua *densita' macroscopica* ($\rho$) e
-la sua *velocita' macroscopica* ($\vec{u}$).
+Da questo punto di vista, simulare un fluido incompressibile richiede di
+calcolare ad ogni passo $t$ lo stato successivo al tempo $t + \Delta t$, in cui
+lo stato del fluido e' descritto in termini di due quantita': la sua *densita'
+macroscopica* ($\rho$) e la sua *velocita' macroscopica* ($\vec{u}$).
 Nella fluidodinamica computazionale esistono diversi metodi e tecniche che
 possono essere impiegate per ottenere un'approssimazione di queste soluzioni, ma
 proprio per la natura delle equazioni parziali differenziali, molti di questi
@@ -97,7 +97,7 @@ mezzo di tre passi:
 3. **Rimbalzo**: le particelle di fluido rimbalzano alla collisione con eventuali
    superfici solide
 
-E' dimostrabile matematicamente che questi 3 passaggi rappresentano
+Sotto determinate ipotesi, e' dimostrato che questi 3 passaggi rappresentano
 un'approssimazione delle equazioni di Navier Stokes.
 
 ## Propagazione
@@ -130,7 +130,7 @@ $$
 w_0 = \frac{4}{9}, \quad w_{1, \dots, 4} = \frac{1}{9} \quad w_{5, \dots, 8} = \frac{1}{36}
 $$
 $\rho$ e $\vec{u}$ si riferiscono invece alle quantita' macroscopiche del nodo
-$\vec{x}$. Tali quantita' possono essere calcolate sostanzialmente facendo una
+$\vec{x}$. Tali quantita' possono essere calcolate sostanzialmente mediante una
 somma e una media.
 $$
 \begin{aligned}
@@ -168,95 +168,76 @@ propagazione e' richiesta la distribuzione di fluido al tempo $t$, e' necessario
 introdurre un altro reticolo di *"supporto"* $f'$, corrispondente alla
 distribuzione al tempo $t + \Delta t$. In questo modo, si evita di sovrascrivere
 valori che sarebbero diversamente richiesti dal passo, un'operazione che
-invaliderebbe di fatto la correttezza del metodo. Un singolo passo di
+invaliderebbe di fatto la correttezza del metodo.
+Un singolo passo di
 simulazione del solver consiste nell'esecuzione sequenziale dei passi
-descritti
-
+descritti per ogni nodo del reticolo
 \begin{algorithm}
-    \caption{Passo di simulazione}
-    \begin{algorithmic}
-        \State $Collide(f)$
-        \State $Stream(f, f')$
-        \State $Bounce(f')$
-        \State Swap $f$ with $f'$
-    \end{algorithmic}
-\end{algorithm}
-
-Per implementare l'equazione del passo di collisione, e' necessario calcolare la
-nuova densita' in ogni direzione per ogni cella del reticolo
-
-\begin{algorithm}
-    \caption{Passo di Collisione}
+    \caption{Passo di Simulazione}
     \begin{algorithmic}
         \For {$x=0$ to $width$}
             \For {$y=0$ to $height$}
                 \State $\vec{x}_{pos} = (x, y)$
-                \State Compute $\rho(\vec{x}_{pos})$ and $\vec{u}(\vec{x}_{pos})$
-                \For {i = 0 to Q}
-                    \State Compute $f^{eq}(\vec{x}_{pos})$ using $\rho$ and
-                    $\vec{u}$
-                    \State $f_i(\vec{x}_{pos}) \mathrel{+}= \Omega
-                    [f^{eq}_i(\vec{x}_{pos}) - f_i(\vec{x}_{pos})]$
-                \EndFor
+                \State $Collide(f, \vec{x}_{pos})$
+                \State $Stream(f, f', \vec{x}_{pos})$
+                \State $Bounce(f', \vec{x}_{pos})$
             \EndFor
         \EndFor
+        \State Swap $f$ with $f'$
     \end{algorithmic}
 \end{algorithm}
 
-I cicli piu' esterni servono a scorrere l'intero spazio bidimensionale, in cui
-in ogni cella vengono calcolate le quantita' macroscopiche necessarie per il
-calcolo di $f^{eq}$. Nel ciclo piu' interno vengono infine calcolate le nuove
-densita' associate ad ogni direzione $i$.
-
-\begin{algorithm}
-    \caption{Passo di Propagazione}
-    \begin{algorithmic}
-        \For {$x=0$ to $width$}
-            \For {$y=0$ to $height$}
-                \For {i = 0 to Q}
-                    \State $\vec{x}_{pos} = (x, y)$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-                \EndFor
-            \EndFor
-        \EndFor
-    \end{algorithmic}
-\end{algorithm}
-
-Il passo di propagazione e' molto simile a quello di collisione, e consiste
-solamente nel trasferimento delle densita' in ogni direzione nel reticolo di
-supporto.
-Nel passo di collisione, e' stato deciso di fare l'*unwrap* del loop per
-scorrere le direzioni, in modo da eliminare anche operazioni di modulo che
-avrebbero diversamente appesantito il programma.
+I cicli piu' esterni servono a scorrere l'intero spazio bidimensionale, in modo
+da calcolare poi i passaggi richiesti in ogni nodo del reticolo.
+Per implementare l'equazione del passo di collisione e' necessario inizialmente
+calcolare le quantita' macroscopiche, per poi calcolare le corrispondenti
+$f^{eq}$ per ogni direzione.
 
 \begin{algorithm}
     \caption{Passo di Collisione}
     \begin{algorithmic}
-        \For {$x=1$ to $width$}
-            \For {$y=1$ to $height$}
-                \For {i = 0 to Q}
-                    \State $f'(\vec{x} + \vec{e}_i) = f(\vec{x})$
-                \EndFor
-            \EndFor
+    \State Compute $\rho(\vec{x}_{pos})$ and $\vec{u}(\vec{x}_{pos})$
+    \For {i = 0 to Q}
+        \State Compute $f^{eq}(\vec{x}_{pos})$ using $\rho$ and
+        $\vec{u}$
+        \State $f_i(\vec{x}_{pos}) \mathrel{+}= \Omega
+        [f^{eq}_i(\vec{x}_{pos}) - f_i(\vec{x}_{pos})]$
+    \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+Il passo di propagazione consiste solamente nel trasferimento delle densita' in
+ogni direzione nel reticolo di supporto.
+
+\begin{algorithm}
+    \caption{Passo di Propagazione}
+    \begin{algorithmic}
+        \For {i = 0 to Q}
+            \State $f'(\vec{x} + \vec{e}_i) = f(\vec{x})$
         \EndFor
     \end{algorithmic}
 \end{algorithm}
 
 
-Dopo aver letto i dati iniziali del problema da un file di configurazione, il
-solver esegue il numero specificato di passi di simulazione, per poi scrivere lo
-stato all'interno di un file VTK, in modo da poter essere usufruito dal software
-di visualizzazione Paraview\textsuperscript{\textcopyright}.
-Alternativamente e' possibile eseguire il programma in una modalita' di
-visualizzazione *realtime* della simulazione, in cui ad ogni step del solver
-viene visualizzato lo stato tramite SDL2 [..].
+Nel passo di collisione, e' stato deciso di fare l'*unwrap* del loop per
+scorrere le direzioni, in modo da eliminare anche operazioni di modulo che
+avrebbero diversamente appesantito il programma, per cui le direzioni opposte
+sono codificate direttamente all'interno dell'algoritmo.
+
+\begin{algorithm}
+    \caption{Passo di Collisione}
+    \begin{algorithmic}
+    \State $\vec{x}_{pos} = (x, y)$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \end{algorithmic}
+\end{algorithm}
 
 ## Implementazione del Modello
 Il modello `D2Q9` e' implementabile in due modi differenti. Il primo
@@ -290,7 +271,8 @@ Lattice lattice;
 Sebbene i due metodi siano semanticamente equivalenti, la scelta di
 un'implementazione rispetto all'altra puo' influenzare gli accessi in memoria,
 con conseguente influenza delle performance significativa. Nell'implementazione
-e' stato deciso di utilizzare la seconda rappresentazione tre motivi principali.
+e' stato deciso di utilizzare la seconda rappresentazione per tre motivi
+principali.
 Il primo e' in termini di utilizzo della memoria poiche' il compilatore, se si
 scegliesse la prima rappresentazione, potrebbe inserire un *padding* in ogni
 struttura, che sara' a sua volta replicata piu' volte all'interno di un array,
@@ -304,32 +286,42 @@ Infine, la seconda rappresentazione e' anche particolarmente adatta ad
 implementazioni su GPU, poiche' favorisce l'accesso *coalescente* dei threads
 alla memoria.
 
+L'implementazione del solver finale, legge la configurazione iniziale del
+problema da un file di configurazione, esegue il numero specificato di passi di
+simulazione, e infine scrive lo stato finale all'interno di un file VTK, cosi'
+che possa essere visualizzato con il software di visualizzazione
+Paraview\textsuperscript{\textcopyright}.
+Alternativamente e' possibile eseguire il programma in una modalita' di
+visualizzazione *realtime* della simulazione, in cui ad ogni step del solver
+viene renderizzato lo stato con SDL2 [@libsdl]
 
 # Implementazione Parallela
 Per la parallelizzazione del solver, si e' seguita la metodologia descritta in
-[@9092429]. E' possibile notare come i due loop piu' esterni di ogni metodo,
-servano essenzialmente a scorrere l'intero spazio della simulazione, per cui
-evidenziano come la computazione sia di tipo data parallel *globally
-synchronous*. Per questa ragione, e' stato deciso di implementare il solver
-parallelo su piattaforma CUDA, poiche' si presta particolarmente bene a questo
-tipo di computazioni. L'idea principale consiste essenzialmente nello sfruttare
+[@9092429]. E' possibile notare come i due loop nello step del solver, servano
+essenzialmente a scorrere l'intero spazio della simulazione, per cui evidenziano
+come la computazione sia di tipo data parallel *globally synchronous*.
+Per questa ragione, e' stato deciso di implementare il solver parallelo su
+piattaforma CUDA, poiche' si presta particolarmente bene a questo tipo di
+computazioni. L'idea principale consiste essenzialmente nello sfruttare
 l'organizzazione bi-dimensionale fornita da CUDA per *"mappare"* un thread ad
-ogni nodo di reticolo della simulazione, per cui la grana compuazionale coincide
-con il corpo dei loop.
-Per poter implementare il metodo, ogni thread dovra' sincronizzarsi alla fine di
-ogni sotto-passo con tutti gli altri threads della griglia. In altri termini, e'
-necessario implementare una barrier inter-blocco (a livello di griglia). Per
-implementare questa primitiva di sincronizzazione globale ci sono tre metodi
-principali [@5537722]: 1) Sfruttare la barrier implicita alla fine
-dell'esecuzione di un kernel (*CPU Synchronization*); 2) Utilizzare una
-variabile globale, accedendola in mutua esclusione (*GPU lock-based
-Synchronization*); 3) Sincronizzazione lockfree (*GPU lock-free
-Synchronization*).
+un determinato numero di nodi di reticolo della simulazione, che rappresenta di
+fatto la grana compuazionale del problema.
+Ogni passaggio del metodo, prima che possa essere eseguito, necessita che i
+passaggi precenti siano stati eseguiti, in altri termini, esiste una TDD
+(*True Data Dependency*) tra loro. Nella progettazione dell'algoritmo parallelo,
+si traduce in una necessita' di sincronizzazione tra tutti i threads della
+griglia alla fine di ogni passo. In altri termini, e' necessario implementare
+una barrier inter-blocco (a livello di griglia). Per implementare questa
+primitiva di sincronizzazione globale ci sono tre metodi principali [@5537722]:
+1) Sfruttare la barrier implicita alla fine dell'esecuzione di un kernel (*CPU
+Synchronization*); 2) Utilizzare una variabile globale, con accesso in mutua
+esclusione (*GPU lock-based Synchronization*); 3) Sincronizzazione lockfree
+(*GPU lock-free Synchronization*).
 Nonostante la sincronizzazione implicita dei kernel introduca un overhead dovuto
 al lancio consecutivo di piu' kernel, e' stato scelto il primo metodo.
 Le motivazioni risiedono in primo luogo nella semplicita' di implementazione, e
-in secondo luogo al fatto che un'implementazione corretta delle soluzioni 2 e 3
-introduce troppo overhead, al punto di avere performance peggiori della prima
+in secondo luogo, un'implementazione corretta delle soluzioni 2 e 3
+introdurrebbe troppo overhead, al punto di avere performance peggiori della prima
 soluzione [@5537722].
 Il passo di simulazione, quindi, consistera' semplicemente in una chiamata dei
 kernels corrispondenti ai sotto-passi della simulazione in sequenza, e di una
@@ -381,6 +373,10 @@ l'indice $x$ e $y$ di thread all'interno della griglia. Siccome tutti i
 sotto-passi sono stati parallelizzati seguendo lo stesso principio, e' stato
 riportato solo il passo di collisione.
 
+L'implementazione parallela utilizza un partizionamento a blocchi di threads di
+dimensioni $16 \times 16$ (256 *threads*) in modo da massimizzare l'occupazione
+degli *streaming multiprocessors*.
+
 # Risultati e benchmarks
 Per valutare le performance delle implementazioni si e' scelto un problema
 specifico di fluidodinamica, che consiste nel simulare un'ipotetica galleria
@@ -395,57 +391,69 @@ $\vec{u} = \langle 1, 0 \rangle$.
 Ai fini della valutazione, si e' sviluppata un'apposita suite di benchmarking,
 che si limita a calcolare il tempo di esecuzione dei passi di simulazione
 indicati nel file di configurazione.
-Per effettuare il benchmarking sono state utizzate due macchine: una dotata di
-GPU NVIDIA RTX 2070 e una GPU NVIDIA T4 (messa a disposizione dal dipartimento).
-Sono stati effettuati poi diversi test con dimensioni del problema differenti.
+Per effettuare il benchmarking sono state utizzate due macchine, chiamate
+`turing` e `alpha`. La prima e' dotata di GPU NVIDIA RTX 2070, mentre la seconda
+di una GPU NVIDIA T4, messa a disposizione dal dipartimento.
+I benchmarks sono stati effettuati su un problema di dimensioni $1024\times512$,
+con $1000$ passi di simulazione. I risultati ottenuti in termini di speedup sono
+riassunti nel grafico seguente.
 
 \begin{tikzpicture}
     \begin{axis}[
-        xlabel=Nr. Nodes,
-        ylabel=Time (ms),
-        ymode=log,
+        xmin=1,
+        xlabel=n. blocks,
+        ylabel=speedup,
         xmode=log,
         log basis x={2},
-        log basis y={10}
+        legend pos=north west
 ]
-        % CPU
+
         \addplot[mark=*,blue] coordinates {
-            (8192,546)
-            (32768,3084)
-            (131072,20192)
-            (524288,119875)
-            (1097152,735681)
+            (1,20192/25751)
+            (2,20192/13125)
+            (4,20192/6685)
+            (8,20192/3436)
+            (16,20192/3195)
+            (32,20192/2525)
+            (64,20192/1371)
+            (128,20192/1361)
+            (256,20192/1273)
+            (512,20192/620)
+            (1024,20192/454)
+            (2048,20192/269)
         };
-        % GPU
+
         \addplot[mark=*,red] coordinates {
-            (8192,22)
-            (32768,30)
-            (131072,81)
-            (524288,262)
-            (1097152,932)
+            (1,20192/32145)
+            (2,20192/16493)
+            (4,20192/8674)
+            (8,20192/5086)
+            (16,20192/5060)
+            (32,20192/3679)
+            (64,20192/2031)
+            (128,20192/2227)
+            (256,20192/2031)
+            (512,20192/997)
+            (1024,20192/781)
+            (2048,20192/454)
         };
+
+        \addlegendentry{turing}
+        \addlegendentry{alpha}
+
     \end{axis}
 \end{tikzpicture}
 
-\begin{tikzpicture}
-    \begin{axis}[
-        xlabel=Threads,
-        ylabel=Speedup,
-        xmode=log,
-        log basis x={2},
-]
-        % Speedup Medio
-        \addplot[mark=*,blue] coordinates {
-            (8192,24.82)
-            (32768,102.8)
-            (131072,249.28)
-            (524288,457.53)
-            (1097152,790.35)
-        };
-    \end{axis}
-\end{tikzpicture}
+## Conclusioni
+Dagli esperimenti risulta che lo speedup migliore ottenuto dalla
+prima macchina e' di circa 75, mentre per la seconda macchina e' di 44.5.
+Nonostante lo speedup medio ottenuto dalla prima macchina sia di circa 18.6, e
+per la seconda di 11.4, e' possibile notare dal grafico che lo speedup migliore
+ottenuto e' quello che si trova in corrispondenza al numero di threads della
+griglia che sono pari al numero di nodi del lattice, quindi, idealmente, alla
+situazione in cui ogni thread e' assegnato ad un nodo del lattice. Possiamo
+concludere quindi che la grana computazionale ottima ottenuta e' di un singolo
+nodo di reticolo.
 
-# Conclusioni
-In questa sezione verranno messe le conclusioni tratte dagli esperimenti
-[@LBMRepo]
-
+Il programma di cui si e' discusso in questa relazione e' Open Source ed e'
+reperibile online [@LBMRepo].

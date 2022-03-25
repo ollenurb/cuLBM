@@ -149,9 +149,7 @@ __global__ void bounce_kernel(Lattice<Device> lattice_t, Bitmap<Device> obstacle
 /* +=============================================+ */
 void GpuSolver::step() {
     collide_kernel<<<dim_grid, dim_block>>>(device_lattice, device_obstacle);
-    cudaDeviceSynchronize();
     stream_kernel<<<dim_grid, dim_block>>>(device_lattice, device_lattice_t);
-    cudaDeviceSynchronize();
     bounce_kernel<<<dim_grid, dim_block>>>(device_lattice_t, device_obstacle);
     cudaDeviceSynchronize();
     /* Swap device pointers */
@@ -174,14 +172,15 @@ GpuSolver::GpuSolver(Parameters params) : Solver(params) {
 
     /* Compute grid and block size */
     dim_block = dim3(BLOCK_DIM, BLOCK_DIM);
-    //    dim_grid = dim3((params.width+dim_block.x-1)/dim_block.x, (params.height+dim_block.y-1)/dim_block.y);
-    dim_grid = dim3(4, 1); // TODO: Get from params
+//    dim_grid = dim3((params.width+dim_block.x-1)/dim_block.x, (params.height+dim_block.y-1)/dim_block.y);
+    dim_grid = dim3(64, 32); // TODO: Get from params
 
     /* Compute task size */
     dim3 task_size = dim3(params.width / (dim_block.x * dim_grid.x), params.height / (dim_block.y * dim_grid.y));
     cudaMemcpyToSymbol(device::task_size, &task_size, sizeof(dim3));
 
     printf("Task Size: %d x %d\n", task_size.x, params.height / task_size.y);
+    printf("GridSize: %d x %d\n", dim_grid.x, dim_grid.y);
 
     /* TODO: Refactor into compute_equilibrium(...);*/
     /* Compute equilibrium f for the initial configuration */
