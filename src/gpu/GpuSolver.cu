@@ -172,8 +172,7 @@ GpuSolver::GpuSolver(Parameters params) : Solver(params) {
 
     /* Compute grid and block size */
     dim_block = dim3(BLOCK_DIM, BLOCK_DIM);
-//    dim_grid = dim3((params.width+dim_block.x-1)/dim_block.x, (params.height+dim_block.y-1)/dim_block.y);
-    dim_grid = dim3(64, 32); // TODO: Get from params
+    dim_grid = dim3(params.grid_size.x, params.grid_size.y);
 
     /* Compute task size */
     dim3 task_size = dim3(params.width / (dim_block.x * dim_grid.x), params.height / (dim_block.y * dim_grid.y));

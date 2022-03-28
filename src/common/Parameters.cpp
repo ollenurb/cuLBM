@@ -24,6 +24,8 @@ Parameters load_parameters(std::string filename) {
     configuration.omega = 1 / (3 * viscosity + 0.5);
     configuration.steps = reader.GetInteger(SECTION, "steps", 0);
     configuration.gpu = reader.GetBoolean(SECTION, "gpu", false);
+    configuration.grid_size.x = reader.GetInteger(SECTION, "grid_size.x", 1);
+    configuration.grid_size.y = reader.GetInteger(SECTION, "grid_size.y", 1);
     /* "parse" ConfigurationType */
     std::string type = reader.Get(SECTION, "type", STR_REALTIME);
     configuration.type = types_assoc[type];

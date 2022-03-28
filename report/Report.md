@@ -180,7 +180,7 @@ descritti per ogni nodo del reticolo
                 \State $\vec{x}_{pos} = (x, y)$
                 \State $Collide(f, \vec{x}_{pos})$
                 \State $Stream(f, f', \vec{x}_{pos})$
-                \State $Bounce(f', \vec{x}_{pos})$
+                \State $Bounce(f', obstacle, \vec{x}_{pos})$
             \EndFor
         \EndFor
         \State Swap $f$ with $f'$
@@ -218,24 +218,27 @@ ogni direzione nel reticolo di supporto.
     \end{algorithmic}
 \end{algorithm}
 
-
-Nel passo di collisione, e' stato deciso di fare l'*unwrap* del loop per
-scorrere le direzioni, in modo da eliminare anche operazioni di modulo che
-avrebbero diversamente appesantito il programma, per cui le direzioni opposte
-sono codificate direttamente all'interno dell'algoritmo.
+Nel passo di rimbalzo e' stato deciso di eseguire l'*unwrap* del loop per
+scorrere le direzioni, in modo da eliminare anche eventuali operazioni di modulo
+che avrebbero diversamente appesantito il passo, per cui le direzioni opposte
+sono codificate direttamente all'interno dell'algoritmo. Per rappresentare le
+superfici solide, il passo necessita che sia previsto a livello di
+implementazione un array bidimensionale di booleani (*bitmap*) `obstacle`.
 
 \begin{algorithm}
-    \caption{Passo di Collisione}
+    \caption{Passo di Rimbalzo}
     \begin{algorithmic}
     \State $\vec{x}_{pos} = (x, y)$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
-    \State $f'_i(\vec{x}_{pos} + \vec{e}_i) = f_i(\vec{x}_{pos})$
+    \If{$obstacle(\vec{x}_{pos})$}
+        \State $f'_1(\vec{x}_{pos} + \vec{e}_1) = f_3(\vec{x}_{pos})$
+        \State $f'_2(\vec{x}_{pos} + \vec{e}_2) = f_4(\vec{x}_{pos})$
+        \State $f'_3(\vec{x}_{pos} + \vec{e}_3) = f_1(\vec{x}_{pos})$
+        \State $f'_4(\vec{x}_{pos} + \vec{e}_4) = f_2(\vec{x}_{pos})$
+        \State $f'_5(\vec{x}_{pos} + \vec{e}_5) = f_7(\vec{x}_{pos})$
+        \State $f'_6(\vec{x}_{pos} + \vec{e}_6) = f_8(\vec{x}_{pos})$
+        \State $f'_7(\vec{x}_{pos} + \vec{e}_7) = f_5(\vec{x}_{pos})$
+        \State $f'_8(\vec{x}_{pos} + \vec{e}_8) = f_6(\vec{x}_{pos})$
+    \EndIf
     \end{algorithmic}
 \end{algorithm}
 
@@ -323,7 +326,16 @@ Le motivazioni risiedono in primo luogo nella semplicita' di implementazione, e
 in secondo luogo, un'implementazione corretta delle soluzioni 2 e 3
 introdurrebbe troppo overhead, al punto di avere performance peggiori della prima
 soluzione [@5537722].
-Il passo di simulazione, quindi, consistera' semplicemente in una chiamata dei
+
+Il partizionamento del problema avviene suddividendo l'intera area della
+simulazione in base al numero di threads della griglia CUDA, per cui la
+grandezza della grana computazionale e' calcolata nel modo seguente
+```c
+task_size.x = WIDTH / (BLOCK.x * GRID.x)
+task_size.y = HEIGHT / (BLOCK.y * GRID.y)
+```
+Una volta calcolata la grandezza dell'area di simulazione associata ad ogni
+thread, il passo di simulazione, consistera' semplicemente in una chiamata dei
 kernels corrispondenti ai sotto-passi della simulazione in sequenza, e di una
 successiva sincronizzazione a livello di device. Alla fine dei sotto-passi, si
 trasferiscono i dati del reticolo allocato sul device all'host. Cosi' come
@@ -344,34 +356,36 @@ dei reticoli $f_{dev}$ ed $f'_{dev}$.
     \end{algorithmic}
 \end{algorithm}
 
-Il passo di simulazione puo' essere modificato poi per trasferire i dati dal
-device in memoria solo ad un determinato numero di step, in modo da non
-introdurre troppo overhead dato dai trasferimenti della memoria.
+Come detto in precedenza, la parallelizzazione dei singoli passi consiste
+nell'eliminazione dei due cicli for dell'implementazione sequenziale necessari a
+scorrere l'intero spazio bidimensionale della simulazione.
+Per far cio', il singolo thread calcola inizialmente gli indici che delimitano
+la porzione di simulazione che deve calcolare, per poi scorrere quest'ultima per
+mezzo di due cicli `for`.
+Siccome tutti i sotto-passi sono stati parallelizzati seguendo lo stesso
+principio, e' stato riportato solo il passo di collisione.
 
 \begin{algorithm}
     \caption{Passo di Collisione Parallelo}
     \begin{algorithmic}
-        \State $x$ = blockIdx.x * blockDim.x + threadIdx.x
-        \State $y$ = blockIdx.y * blockDim.y + threadIdx.y
-        \State $\vec{x}_{pos} = \langle x, y \rangle$
-        \State Compute $\rho(\vec{x}_{pos})$ and $\vec{u}(\vec{x}_{pos})$
-        \For {i = 0 to Q}
-            \State Compute $f^{eq}(\vec{x}_{pos})$ using $\rho$ and
-            $\vec{u}$
-            \State $f_i(\vec{x}_{pos}) \mathrel{+}= \Omega
-            [f^{eq}_i(\vec{x}_{pos}) - f_i(\vec{x}_{pos})]$
+        \State x\_from = task\_size.x * (blockIdx.x * blockDim.x + threadIdx.x)
+        \State y\_from = task\_size.y * (blockIdx.y * blockDim.y + threadIdx.y)
+        \State x\_to = x\_from + task\_size.x
+        \State y\_to = y\_from + task\_size.y
+        \For {x\_from to x\_to}
+            \For {y\_from to y\_to}
+            \State $\vec{x}_{pos} = \langle x, y \rangle$
+            \State Compute $\rho(\vec{x}_{pos})$ and $\vec{u}(\vec{x}_{pos})$
+                \For {i = 0 to Q}
+                    \State Compute $f^{eq}(\vec{x}_{pos})$ using $\rho$ and
+                    $\vec{u}$
+                    \State $f_i(\vec{x}_{pos}) \mathrel{+}= \Omega
+                    [f^{eq}_i(\vec{x}_{pos}) - f_i(\vec{x}_{pos})]$
+                \EndFor
+            \EndFor
         \EndFor
     \end{algorithmic}
 \end{algorithm}
-
-Come detto in precedenza, la parallelizzazione dei singoli passi consiste
-nell'eliminazione dei due cicli for dell'implementazione sequenziale necessari a
-scorrere l'intero spazio bidimensionale della simulazione.
-Grazie al modello di programmazione scelto, tale parallelizzazione e' molto
-semplice, per cui basta eliminare i due cicli `for` e sostituire gli indici con
-l'indice $x$ e $y$ di thread all'interno della griglia. Siccome tutti i
-sotto-passi sono stati parallelizzati seguendo lo stesso principio, e' stato
-riportato solo il passo di collisione.
 
 L'implementazione parallela utilizza un partizionamento a blocchi di threads di
 dimensioni $16 \times 16$ (256 *threads*) in modo da massimizzare l'occupazione
@@ -379,63 +393,68 @@ degli *streaming multiprocessors*.
 
 # Risultati e benchmarks
 Per valutare le performance delle implementazioni si e' scelto un problema
-specifico di fluidodinamica, che consiste nel simulare un'ipotetica galleria
-del vento. La geometria del problema e' data da uno spazio di dimensioni $w
-\times w/2$, al cui centro e' posto un'oggetto sferico. La figura [..] riassume
-il problema, in cui il fluido (in questo caso un *gas*) si muove da sinistra
-verso destra, parallelamente all'asse $x$, per cui ogni nodo del lattice avra'
-$\vec{u} = \langle 1, 0 \rangle$.
+specifico di fluidodinamica, che consiste nel simulare un'ipotetica galleria del
+vento. La geometria del problema e' data da uno spazio di dimensioni $w \times
+w/2$, al cui centro e' posto un'oggetto sferico. La figura \ref{figGeometry}
+riassume il problema, in cui il fluido (in questo caso un *gas*) si muove da
+sinistra verso destra, parallelamente all'asse $x$, per cui ogni nodo del
+lattice avra' $\vec{u} = \langle 1, 0 \rangle$.
 
 ![Geometria del problema\label{figGeometry}](img/problem_geometry.png)
 
 Ai fini della valutazione, si e' sviluppata un'apposita suite di benchmarking,
-che si limita a calcolare il tempo di esecuzione dei passi di simulazione
-indicati nel file di configurazione.
-Per effettuare il benchmarking sono state utizzate due macchine, chiamate
-`turing` e `alpha`. La prima e' dotata di GPU NVIDIA RTX 2070, mentre la seconda
-di una GPU NVIDIA T4, messa a disposizione dal dipartimento.
+che calcola il tempo di esecuzione dei passi di simulazione indicati nel file di
+configurazione.
+Per effettuare il benchmarking dell'implementazione parallela sono state
+utizzate due macchine, chiamate `turing` e `alpha`. La prima e' dotata di GPU
+NVIDIA RTX 2070, mentre la seconda di una GPU NVIDIA T4, messa a disposizione
+dal dipartimento.
+I test dell'implementazione sequenziale, invece, sono stati effettuati su un
+processore Ryzen 5 2600, compilando il programma con ottimizzazione `-O3`.
 I benchmarks sono stati effettuati su un problema di dimensioni $1024\times512$,
-con $1000$ passi di simulazione. I risultati ottenuti in termini di speedup sono
-riassunti nel grafico seguente.
+con $1000$ passi di simulazione. I risultati in termini di speedup sono da
+considerarsi rispetto all'esecuzione sequenziale migliore, e sono riassunti nel
+grafico seguente.
+
 
 \begin{tikzpicture}
     \begin{axis}[
         xmin=1,
         xlabel=n. blocks,
         ylabel=speedup,
-        xmode=log,
-        log basis x={2},
+        %% xmode=log,
+        %% log basis x={2},
         legend pos=north west
 ]
 
         \addplot[mark=*,blue] coordinates {
-            (1,20192/25751)
-            (2,20192/13125)
-            (4,20192/6685)
-            (8,20192/3436)
-            (16,20192/3195)
-            (32,20192/2525)
-            (64,20192/1371)
-            (128,20192/1361)
-            (256,20192/1273)
-            (512,20192/620)
-            (1024,20192/454)
-            (2048,20192/269)
+            (1,128289/25751)
+            (2,128289/13125)
+            (4,128289/6685)
+            (8,128289/3436)
+            (16,128289/3195)
+            (32,128289/2525)
+            (64,128289/1371)
+            (128,128289/1361)
+            (256,128289/1273)
+            (512,128289/620)
+            (1024,128289/454)
+            (2048,128289/269)
         };
 
         \addplot[mark=*,red] coordinates {
-            (1,20192/32145)
-            (2,20192/16493)
-            (4,20192/8674)
-            (8,20192/5086)
-            (16,20192/5060)
-            (32,20192/3679)
-            (64,20192/2031)
-            (128,20192/2227)
-            (256,20192/2031)
-            (512,20192/997)
-            (1024,20192/781)
-            (2048,20192/454)
+            (1,128289/32145)
+            (2,128289/16493)
+            (4,128289/8674)
+            (8,128289/5086)
+            (16,128289/5060)
+            (32,128289/3679)
+            (64,128289/2031)
+            (128,128289/2227)
+            (256,128289/2031)
+            (512,128289/997)
+            (1024,128289/781)
+            (2048,128289/454)
         };
 
         \addlegendentry{turing}
@@ -446,14 +465,13 @@ riassunti nel grafico seguente.
 
 ## Conclusioni
 Dagli esperimenti risulta che lo speedup migliore ottenuto dalla
-prima macchina e' di circa 75, mentre per la seconda macchina e' di 44.5.
-Nonostante lo speedup medio ottenuto dalla prima macchina sia di circa 18.6, e
-per la seconda di 11.4, e' possibile notare dal grafico che lo speedup migliore
-ottenuto e' quello che si trova in corrispondenza al numero di threads della
-griglia che sono pari al numero di nodi del lattice, quindi, idealmente, alla
-situazione in cui ogni thread e' assegnato ad un nodo del lattice. Possiamo
-concludere quindi che la grana computazionale ottima ottenuta e' di un singolo
-nodo di reticolo.
+prima macchina e' di circa 476.91 con uno speedup medio di 118.10, mentre per la
+seconda macchina e' di 282.57, con uno speedup medio di 72.62.
+E' possibile notare dal grafico che lo speedup migliore ottenuto e' quello che
+si trova in corrispondenza al numero di threads della griglia che sono pari al
+numero di nodi del reticolo, quindi, idealmente, alla situazione in cui ogni
+thread e' assegnato ad un nodo del lattice. Possiamo concludere quindi che la
+grana computazionale ottima ottenuta e' di un singolo nodo di reticolo.
 
 Il programma di cui si e' discusso in questa relazione e' Open Source ed e'
 reperibile online [@LBMRepo].

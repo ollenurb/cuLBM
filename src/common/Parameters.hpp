@@ -30,6 +30,7 @@ struct Parameters {
     SimulationType type;
     unsigned steps;
     bool gpu;
+    Vector2D<unsigned> grid_size;
 };
 
 Parameters load_parameters(std::string filename);
